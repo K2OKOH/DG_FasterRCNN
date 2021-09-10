@@ -1,0 +1,7 @@
+.vscode/*
+
+SaveFile/*
+output/*
+
+*.pth
+*.plk
