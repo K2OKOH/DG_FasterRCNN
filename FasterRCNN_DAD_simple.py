@@ -30,8 +30,8 @@ import torchvision.transforms as transforms
 from torch.utils.data.sampler import Sampler
 import copy
 
-from lib.roi_data_layer.roidb_DG import combined_roidb
-from lib.roi_data_layer.roibatchLoader import roibatchLoader
+from lib.roi_dg_data_layer.roidb_DG import combined_roidb
+from lib.roi_dg_data_layer.roibatchLoader import roibatchLoader
 from lib.model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from lib.model.utils.net_utils import weights_normal_init, save_net, load_net, \
       adjust_learning_rate, save_checkpoint, clip_gradient
@@ -707,10 +707,23 @@ if __name__ == '__main__':    #仅作为脚本运行
                 rois, cls_prob, bbox_pred, \
                 rpn_loss_cls, rpn_loss_box, \
                 RCNN_loss_cls, RCNN_loss_bbox, \
-                rois_label = fasterRCNN_DAD(im_data, im_info, gt_boxes, num_boxes)
+                rois_label, \
+                d0_d01_img_loss_cls, d0_d01_ins_loss_cls, d0_d01_cst_loss, \
+                d1_d01_img_loss_cls, d1_d01_ins_loss_cls, d1_d01_cst_loss, \
+                d0_d02_img_loss_cls, d0_d02_ins_loss_cls, d0_d02_cst_loss, \
+                d2_d02_img_loss_cls, d2_d02_ins_loss_cls, d2_d02_cst_loss, \
+                d1_d12_img_loss_cls, d1_d12_ins_loss_cls, d1_d12_cst_loss, \
+                d2_d12_img_loss_cls, d2_d12_ins_loss_cls, d2_d12_cst_loss \
+                     = fasterRCNN_DAD(im_data, im_info, gt_boxes, num_boxes)
 
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
-                    + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
+                    + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean() \
+                    +(  d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
+                        d1_d01_img_loss_cls.mean() + d1_d01_ins_loss_cls.mean() + d1_d01_cst_loss.mean() + \
+                        d0_d02_img_loss_cls.mean() + d0_d02_ins_loss_cls.mean() + d0_d02_cst_loss.mean() + \
+                        d2_d02_img_loss_cls.mean() + d2_d02_ins_loss_cls.mean() + d2_d02_cst_loss.mean() + \
+                        d1_d12_img_loss_cls.mean() + d1_d12_ins_loss_cls.mean() + d1_d12_cst_loss.mean() + \
+                        d2_d12_img_loss_cls.mean() + d2_d12_ins_loss_cls.mean() + d2_d12_cst_loss.mean())
                 loss_temp += loss.item()
 
                 # backward

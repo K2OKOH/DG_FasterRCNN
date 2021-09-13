@@ -1,7 +1,9 @@
 .vscode/*
+**/__pycache__/
 
 SaveFile/*
 output/*
 
 *.pth
 *.plk
+*.pyc
