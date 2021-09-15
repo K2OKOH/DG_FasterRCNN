@@ -1,18 +1,9 @@
-#!/bin/zsh
+#!/bin/bash
+# 统一训练脚本
 
 echo "training program start!"
-# CUDA_VISIBLE_DEVICES=1 python FasterRCNN.py \
-#        --dataset cityscape \
-#        --net vgg16 \
-#        --lr 2e-3 \
-#        --lr_decay_step 6 \
-#        --cuda \
-#        --epochs 10 \
-#        --mode train_model \
-#        --bs 1 \
-#        --save_dir ./SaveFile/model/init
 
-CUDA_VISIBLE_DEVICES=0 python FasterRCNN_DAD_simple.py \
+CUDA_VISIBLE_DEVICES=2 python FasterRCNN_DAD_simple.py \
         --dataset cityscape \
         --net vgg16 \
         --lr 2e-3 \

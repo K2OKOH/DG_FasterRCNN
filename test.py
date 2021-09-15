@@ -1,5 +1,8 @@
-
-
+# --------------------------------------------------------
+# Test program satisfy for all the model
+# 待验证
+# modified by xmj
+# --------------------------------------------------------
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -27,6 +30,7 @@ from lib.model.rpn.bbox_transform import bbox_transform_inv
 from lib.model.utils.net_utils import save_net, load_net, vis_detections
 from lib.model.faster_rcnn.vgg16 import vgg16
 from lib.model.faster_rcnn.resnet import resnet
+from setproctitle import setproctitle
 
 import pdb
 
@@ -97,6 +101,7 @@ weight_decay = cfg.TRAIN.WEIGHT_DECAY
 
 if __name__ == '__main__':
 
+  setproctitle("< xmj_test >")
   args = parse_args()
 
   print('Called with args:')
@@ -148,9 +153,9 @@ if __name__ == '__main__':
   cfg.TRAIN.USE_FLIPPED = False
 
   if args.part=='test_s':
-      imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
+      imdb, roidb, ratio_list, ratio_index = combined_roidb(args.s_imdbtest_name, False)
   elif args.part=='test_t':
-      imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
+      imdb, roidb, ratio_list, ratio_index = combined_roidb(args.t_imdbtest_name, False)
   elif args.part=='test_all':
       imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
   else:

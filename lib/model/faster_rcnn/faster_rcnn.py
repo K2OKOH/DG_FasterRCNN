@@ -116,6 +116,7 @@ class _fasterRCNN(nn.Module):
 
         cls_prob = cls_prob.view(batch_size, rois.size(1), -1)
         bbox_pred = bbox_pred.view(batch_size, rois.size(1), -1)
+
         if self.training:
             rpn_loss_cls = torch.unsqueeze(rpn_loss_cls, 0)
             rpn_loss_bbox = torch.unsqueeze(rpn_loss_bbox, 0)

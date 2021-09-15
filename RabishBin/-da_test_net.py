@@ -1,5 +1,3 @@
-
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -18,23 +16,19 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim as optim
 import pickle
-from roi_data_layer.roidb import combined_roidb
-from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from model.rpn.bbox_transform import clip_boxes
-from model.nms.nms_wrapper import nms
-from model.rpn.bbox_transform import bbox_transform_inv
-from model.utils.net_utils import save_net, load_net, vis_detections
-from model.faster_rcnn.vgg16 import vgg16
-from model.faster_rcnn.resnet import resnet
+from lib.roi_data_layer.roidb import combined_roidb
+from lib.roi_data_layer.roibatchLoader import roibatchLoader
+from lib.model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
+from lib.model.rpn.bbox_transform import clip_boxes
+from lib.model.nms.nms_wrapper import nms
+from lib.model.rpn.bbox_transform import bbox_transform_inv
+from lib.model.utils.net_utils import save_net, load_net, vis_detections
+from lib.model.faster_rcnn.vgg16 import vgg16
+from lib.model.faster_rcnn.resnet import resnet
 
 import pdb
 
-try:
-    xrange          # Python 2
-except NameError:
-    xrange = range  # Python 3
-
+xrange = range  # Python 3
 
 def parse_args():
   """
@@ -156,7 +150,7 @@ if __name__ == '__main__':
   elif args.part=='test_t':
       imdb, roidb, ratio_list, ratio_index = combined_roidb(args.t_imdbtest_name, False)
   elif args.part=='test_all':
-      imdb, roidb, ratio_list, ratio_index = combined_roidb(args.all_imdbtest_name, False)
+      imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
   else:
       print("don't have the test part !")
       pdb.set_trace()

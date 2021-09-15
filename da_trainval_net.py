@@ -68,7 +68,7 @@ def parse_args():
                       default=10000, type=int)
 
   parser.add_argument('--save_dir', dest='save_dir',
-                      help='directory to save models', default="../data/model/da_model",
+                      help='directory to save models', default="./SaveFile/model/da_baseline",
                       type=str)
   parser.add_argument('--nw', dest='num_workers',
                       help='number of worker to load data',
@@ -450,8 +450,8 @@ if __name__ == '__main__':
         loss_temp = 0
         start = time.time()
 
-    if epoch==args.max_epochs:
-        save_name = os.path.join(output_dir, 'cityscape_consist_default.pth'.format(args.session, epoch, step))
+    if epoch<=args.max_epochs:
+        save_name = os.path.join(output_dir, 'cityscape_da_baseline_e%s.pth' % epoch)
         save_checkpoint({
             'session': args.session,
             'epoch': epoch + 1,

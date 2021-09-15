@@ -81,7 +81,7 @@ def parse_args():
                         type=str)
 
     parser.add_argument('--save_dir', dest='save_dir',
-                        help='directory to save models', default="./SaveFile/model/test_do_not_use",
+                        help='directory to save models', default="./SaveFile/model/DAD_simple",
                         type=str)
     parser.add_argument('--nw', dest='num_workers',
                         help='number of worker to load data',
@@ -778,11 +778,11 @@ if __name__ == '__main__':    #仅作为脚本运行
                     'class_agnostic': args.class_agnostic,
                 }, save_name)
                 print('save model: {}'.format(save_name))
-                map = test_model(save_name)
+                # map = test_model(save_name)
                 # MAP write
-                if args.log_flag:
-                    with open(epoch_test_log_dir,"a") as f: 
-                        f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
+                # if args.log_flag:
+                #     with open(epoch_test_log_dir,"a") as f: 
+                #         f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
     
     # train set
     if args.mode == "train_model":
