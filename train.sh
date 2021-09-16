@@ -3,7 +3,7 @@
 
 echo "training program start!"
 
-CUDA_VISIBLE_DEVICES=2 python FasterRCNN_DAD_simple.py \
+CUDA_VISIBLE_DEVICES=1 python FasterRCNN_ML.py \
         --dataset cityscape \
         --net vgg16 \
         --lr 2e-3 \

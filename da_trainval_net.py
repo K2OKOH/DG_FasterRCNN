@@ -231,7 +231,7 @@ if __name__ == '__main__':
     os.makedirs(output_dir)
 
   s_sampler_batch = sampler(s_train_size, args.batch_size)
-  t_sampler_batch=sampler(t_train_size,args.batch_size)
+  t_sampler_batch = sampler(t_train_size,args.batch_size)
 
   s_dataset = roibatchLoader(s_roidb, s_ratio_list, s_ratio_index, args.batch_size, \
                            s_imdb.num_classes, training=True)
@@ -349,10 +349,6 @@ if __name__ == '__main__':
 
   iters_per_epoch = int(s_train_size / args.batch_size)
 
-  if args.use_tfboard:
-    from tensorboardX import SummaryWriter
-    logger = SummaryWriter("logs")
-
   for epoch in range(args.start_epoch, args.max_epochs + 1):
     # setting to train mode
 
@@ -390,7 +386,9 @@ if __name__ == '__main__':
       rois, cls_prob, bbox_pred, \
       rpn_loss_cls, rpn_loss_box, \
       RCNN_loss_cls, RCNN_loss_bbox, \
-      rois_label,DA_img_loss_cls,DA_ins_loss_cls,tgt_DA_img_loss_cls,tgt_DA_ins_loss_cls,\
+      rois_label, \
+      DA_img_loss_cls, DA_ins_loss_cls, \
+      tgt_DA_img_loss_cls, tgt_DA_ins_loss_cls,\
       DA_cst_loss,tgt_DA_cst_loss=\
           fasterRCNN(im_data, im_info, gt_boxes, num_boxes,need_backprop,
                      tgt_im_data, tgt_im_info, tgt_gt_boxes, tgt_num_boxes, tgt_need_backprop)
@@ -445,7 +443,6 @@ if __name__ == '__main__':
             'loss_rcnn_cls': loss_rcnn_cls,
             'loss_rcnn_box': loss_rcnn_box
           }
-          logger.add_scalars("logs_s_{}/losses".format(args.session), info, (epoch - 1) * iters_per_epoch + step)
 
         loss_temp = 0
         start = time.time()
@@ -461,6 +458,3 @@ if __name__ == '__main__':
             'class_agnostic': args.class_agnostic,
         }, save_name)
         print('save model: {}'.format(save_name))
-
-  if args.use_tfboard:
-    logger.close()

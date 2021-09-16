@@ -79,7 +79,7 @@ def parse_args():
                         type=str)
 
     parser.add_argument('--save_dir', dest='save_dir',
-                        help='directory to save models', default="./SaveFile/model/mate_sd1d2",
+                        help='directory to save models', default="./SaveFile/model/ML",
                         type=str)
     parser.add_argument('--nw', dest='num_workers',
                         help='number of worker to load data',
@@ -142,6 +142,9 @@ def parse_args():
     parser.add_argument('--vis', dest='vis',
                         help='visualization mode',
                         action='store_true')
+    parser.add_argument('--log_flag', dest='log_flag', # add by xmj
+                        help='1:batch_loss, 2:epoch_test',
+                        default=0, type=int)
 
     # patch info
     parser.add_argument('--PatchSize', dest='PatchSize',
@@ -230,7 +233,7 @@ class sampler(Sampler):
 
 if __name__ == '__main__':    #仅作为脚本运行    
 
-    setproctitle.setproctitle("xmj XD")
+    setproctitle.setproctitle("< xmj_ML >")
 
     args = parse_args()
 
@@ -313,6 +316,18 @@ if __name__ == '__main__':    #仅作为脚本运行
         output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+        
+        # 创建 log 目录
+        if args.log_flag:
+            log_dir = output_dir + '/log'
+            loss_log_dir = log_dir + '/loss_log.txt'
+            epoch_test_log_dir = log_dir + '/epoch_test_log.txt'
+            if not os.path.exists(log_dir):
+                os.mkdir(log_dir)
+            with open(loss_log_dir,"w") as f: 
+                f.write("[Date: %s]\r" %M_D)   #这句话自带文件关闭功能，不需要再写f.close( )
+            with open(epoch_test_log_dir,"w") as f: 
+                f.write("[Date: %s]\r" %M_D)   #这句话自带文件关闭功能，不需要再写f.close( )
 
         sampler_batch_s = sampler(train_size_s, args.batch_size)
         dataset_s = roibatchLoader(roidb_s, ratio_list_s, ratio_index_s, args.batch_size, \
@@ -464,6 +479,10 @@ if __name__ == '__main__':    #仅作为脚本运行
         for epoch in range(args.start_epoch, args.max_epochs + 1):
             # setting to train mode
 
+            if args.log_flag:
+                with open(loss_log_dir,"a") as f: 
+                    f.write("epoch: %d\r" % (epoch))   #这句话自带文件关闭功能，不需要再写f.close( )
+
             fasterRCNN_1.train()
             loss_temp = 0
             start = time.time()
@@ -510,6 +529,7 @@ if __name__ == '__main__':    #仅作为脚本运行
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                     + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
                 loss_temp += loss.item()
+                loss_meta_train = loss.data
 
                 # backward
                 optimizer.zero_grad()
@@ -531,7 +551,7 @@ if __name__ == '__main__':    #仅作为脚本运行
                 rois_label = fasterRCNN_1(im_data_d1, im_info_d1, gt_boxes_d1, num_boxes_d1)
 
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
-                    + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
+                    + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean() + loss_meta_train
                 loss_temp += loss.item()
                 loss_true = loss.data
 
@@ -585,6 +605,11 @@ if __name__ == '__main__':    #仅作为脚本运行
                     print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end-start))
                     print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f" \
                                 % (loss_rpn_cls, loss_rpn_box, loss_rcnn_cls, loss_rcnn_box))
+                    
+                    # loss write
+                    if args.log_flag:
+                        with open(loss_log_dir,"a") as f: 
+                            f.write("  count: %s  \tloss: %f\r" % (step, loss_temp))   #这句话自带文件关闭功能，不需要再写f.close( )
 
                     loss_temp = 0
                     start = time.time()
@@ -600,6 +625,11 @@ if __name__ == '__main__':    #仅作为脚本运行
                     'class_agnostic': args.class_agnostic,
                 }, save_name)
                 print('save model: {}'.format(save_name))
+                # map = test_model(save_name)
+                # MAP write
+                # if args.log_flag:
+                #     with open(epoch_test_log_dir,"a") as f: 
+                #         f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
 
     elif args.mode == "test_model":
         print(">>test model start")
