@@ -347,6 +347,10 @@ class cityscape(imdb):
         print('Recompute with `./tools/reval.py --matlab ...` for your paper.')
         print('-- Thanks, The Management')
         print('--------------------------------------------------------------')
+        # add by xmj
+        return (np.mean(aps))
+
+
 
     def _do_matlab_eval(self, output_dir='output'):
         print('-----------------------------------------------------')

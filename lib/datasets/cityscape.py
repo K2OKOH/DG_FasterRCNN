@@ -29,10 +29,7 @@ from .voc_eval import voc_eval
 # >>>> obsolete, because it depends on sth outside of this project
 from model.utils.config import cfg
 
-try:
-    xrange          # Python 2
-except NameError:
-    xrange = range  # Python 3
+xrange = range  # Python 3
 
 # <<<< obsolete
 

@@ -45,7 +45,7 @@ from lib.model.faster_rcnn_DAD_simple.vgg16 import vgg16
 from lib.model.faster_rcnn_DAD_simple.resnet import resnet
 import torchvision.utils as vutils
 
-from lib.patch.utils import *
+from test import test_model
 import setproctitle
 
 def parse_args():
@@ -81,7 +81,7 @@ def parse_args():
                         type=str)
 
     parser.add_argument('--save_dir', dest='save_dir',
-                        help='directory to save models', default="./SaveFile/model/DAD_simple_ λ",
+                        help='directory to save models', default="./SaveFile/model/DAD_simple_G2",
                         type=str)
     parser.add_argument('--nw', dest='num_workers',
                         help='number of worker to load data',
@@ -295,6 +295,7 @@ if __name__ == '__main__':    #仅作为脚本运行
     # 加载当前日期
     M_D = time.strftime("(%b-%d[%H])", time.localtime())
 
+    """
     def test_model(test_model_dir = args.model_dir):
         print(">>test model start")
 
@@ -483,13 +484,19 @@ if __name__ == '__main__':    #仅作为脚本运行
         end = time.time()
         print("test time: %0.4fs" % (end - start))
         return map
+    """
 
     def train_model():
         print(">>train model start")
         # -- Note: Use validation set and disable the flipped to enable faster loading.
         cfg.TRAIN.USE_FLIPPED = True
         cfg.USE_GPU_NMS = args.cuda
-
+        '''
+        s_imdb        -> 实例化后的数据集       !! 例如 imdb = cityscape(train_s, 2007)
+        s_roidb       -> 每张图片标注字典的列表  !! 例如 [{ 第一张图片的字典 },{ 第二张图片的字典 },{...}]
+        s_ratio_list  -> 排列后的长宽比列表
+        s_ratio_index -> 长宽比的次序
+        '''
         # 读取三个域的数据
         imdb_s, roidb_s, ratio_list_s, ratio_index_s = combined_roidb(args.s_imdb_name)
         imdb_d1, roidb_d1, ratio_list_d1, ratio_index_d1 = combined_roidb(args.D1_imdb_name)
@@ -719,7 +726,7 @@ if __name__ == '__main__':    #仅作为脚本运行
 
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                     + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean() \
-                    + 0.03*(d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
+                    + 0.03*(   d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
                             d1_d01_img_loss_cls.mean() + d1_d01_ins_loss_cls.mean() + d1_d01_cst_loss.mean() + \
                             d0_d02_img_loss_cls.mean() + d0_d02_ins_loss_cls.mean() + d0_d02_cst_loss.mean() + \
                             d2_d02_img_loss_cls.mean() + d2_d02_ins_loss_cls.mean() + d2_d02_cst_loss.mean() + \
@@ -754,7 +761,8 @@ if __name__ == '__main__':    #仅作为脚本运行
                         fg_cnt = torch.sum(rois_label.data.ne(0))
                         bg_cnt = rois_label.data.numel() - fg_cnt
 
-                    print("[session %d][epoch %2d][iter %4d/%4d] loss: %.4f, lr: %.2e" \
+                    print(args.save_dir)
+                    print("[session %d][epoch %2d][iter %4d/%4d] \t\033[0;31m loss: %.4f\033[0m, lr: %.2e" \
                                             % (args.session, epoch, step, iters_per_epoch, loss_temp, lr))
                     print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end-start))
                     print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f" \
@@ -779,14 +787,15 @@ if __name__ == '__main__':    #仅作为脚本运行
                     'class_agnostic': args.class_agnostic,
                 }, save_name)
                 print('save model: {}'.format(save_name))
-                # map = test_model(save_name)
+                map = test_model(save_name, args)
                 # MAP write
-                # if args.log_flag:
-                #     with open(epoch_test_log_dir,"a") as f: 
-                #         f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
+                if args.log_flag:
+                    with open(epoch_test_log_dir,"a") as f: 
+                        f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
     
     # train set
     if args.mode == "train_model":
         train_model()
     elif args.mode == "test_model":
-        test_model()
+        map = test_model(args.model_dir, args)
+        print("\n\tMAP: %s" % map)
