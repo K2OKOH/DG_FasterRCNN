@@ -217,8 +217,6 @@ class cityscape(imdb):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-        if index == 'source_krefeld_000000_032845_leftImg8bit':
-            print("la")
         filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
         tree = ET.parse(filename)
         objs = tree.findall('object')

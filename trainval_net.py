@@ -203,7 +203,7 @@ if __name__ == '__main__':    #仅作为脚本运行
   # -- Note: Use validation set and disable the flipped to enable faster loading.
   cfg.TRAIN.USE_FLIPPED = True
   cfg.USE_GPU_NMS = args.cuda
-  imdb, roidb, ratio_list, ratio_index = combined_roidb(args.t_imdb_name)
+  imdb, roidb, ratio_list, ratio_index = combined_roidb(args.all_imdb_name)
   train_size = len(roidb)   # add flipped         image_index*2
 
   print('{:d} roidb entries'.format(len(roidb)))
@@ -366,8 +366,8 @@ if __name__ == '__main__':    #仅作为脚本运行
         loss_temp = 0
         start = time.time()
 
-    if epoch==args.max_epochs:
-        save_name = os.path.join(output_dir, 'only_target_baseline.pth'.format(args.session, epoch, step))
+    if epoch<=args.max_epochs:
+        save_name = os.path.join(output_dir, 'cityscape_e%s.pth' % epoch)
         save_checkpoint({
             'session': args.session,
             'epoch': epoch + 1,

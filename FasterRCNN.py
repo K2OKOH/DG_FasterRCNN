@@ -42,7 +42,6 @@ from lib.model.faster_rcnn.vgg16 import vgg16
 from lib.model.faster_rcnn.resnet import resnet
 import torchvision.utils as vutils
 
-from lib.patch.utils import *
 import setproctitle
 
 def parse_args():

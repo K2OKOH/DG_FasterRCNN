@@ -11,10 +11,10 @@ from __future__ import division
 from __future__ import print_function
 
 __sets = {}
-from datasets.pascal_voc import pascal_voc
-from datasets.cityscape_DG import cityscape
-from datasets.cckw import cckw
-from datasets.imagenet import imagenet
+from lib.datasets.pascal_voc import pascal_voc
+from lib.datasets.cityscape_DG import cityscape
+from lib.datasets.cckw import cckw
+from lib.datasets.imagenet import imagenet
 
 import numpy as np
 

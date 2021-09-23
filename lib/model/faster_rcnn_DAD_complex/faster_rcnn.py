@@ -49,10 +49,6 @@ class _fasterRCNN(nn.Module):
         self.consistency_loss = torch.nn.MSELoss(size_average=False)
 
     def forward(self, im_data, im_info, gt_boxes, num_boxes):
-
-        # 输入一个域，用于扩充
-        
-
         # 输入三个域的图片
         im_data_d0 = im_data[0].unsqueeze(0)
         im_data_d1 = im_data[1].unsqueeze(0)

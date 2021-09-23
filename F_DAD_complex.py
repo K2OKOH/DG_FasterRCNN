@@ -34,18 +34,18 @@ from lib.roi_dg_data_layer.roidb_DG import combined_roidb
 from lib.roi_dg_data_layer.roibatchLoader import roibatchLoader
 from lib.model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from lib.model.utils.net_utils import weights_normal_init, save_net, load_net, \
-      adjust_learning_rate, save_checkpoint, clip_gradient
+        adjust_learning_rate, save_checkpoint, clip_gradient
 
 from lib.model.rpn.bbox_transform import clip_boxes
 from lib.model.nms.nms_wrapper import nms
 from lib.model.rpn.bbox_transform import bbox_transform_inv
 from lib.model.utils.net_utils import save_net, load_net, vis_detections
 
-from lib.model.faster_rcnn_DAD_simple.vgg16 import vgg16
-from lib.model.faster_rcnn_DAD_simple.resnet import resnet
+from lib.model.faster_rcnn_DAD_complex.vgg16 import vgg16
+from lib.model.faster_rcnn_DAD_complex.resnet import resnet
 import torchvision.utils as vutils
 
-from lib.patch.utils import *
+from test import test_model
 import setproctitle
 
 def parse_args():
@@ -81,7 +81,7 @@ def parse_args():
                         type=str)
 
     parser.add_argument('--save_dir', dest='save_dir',
-                        help='directory to save models', default="./SaveFile/model/DAD_simple_ λ",
+                        help='directory to save models', default="./SaveFile/model/DAD_simple_G2",
                         type=str)
     parser.add_argument('--nw', dest='num_workers',
                         help='number of worker to load data',
@@ -295,6 +295,7 @@ if __name__ == '__main__':    #仅作为脚本运行
     # 加载当前日期
     M_D = time.strftime("(%b-%d[%H])", time.localtime())
 
+    """
     def test_model(test_model_dir = args.model_dir):
         print(">>test model start")
 
@@ -483,25 +484,31 @@ if __name__ == '__main__':    #仅作为脚本运行
         end = time.time()
         print("test time: %0.4fs" % (end - start))
         return map
+    """
 
     def train_model():
         print(">>train model start")
         # -- Note: Use validation set and disable the flipped to enable faster loading.
         cfg.TRAIN.USE_FLIPPED = True
         cfg.USE_GPU_NMS = args.cuda
-
-        # 读取三个域的数据
+        '''
+        s_imdb        -> 实例化后的数据集       !! 例如 imdb = cityscape(train_s, 2007)
+        s_roidb       -> 每张图片标注字典的列表  !! 例如 [{ 第一张图片的字典 },{ 第二张图片的字典 },{...}]
+        s_ratio_list  -> 排列后的长宽比列表
+        s_ratio_index -> 长宽比的次序
+        '''
+        # 读取一个域的数据
         imdb_s, roidb_s, ratio_list_s, ratio_index_s = combined_roidb(args.s_imdb_name)
-        imdb_d1, roidb_d1, ratio_list_d1, ratio_index_d1 = combined_roidb(args.D1_imdb_name)
-        imdb_d2, roidb_d2, ratio_list_d2, ratio_index_d2 = combined_roidb(args.D2_imdb_name)
+        # imdb_d1, roidb_d1, ratio_list_d1, ratio_index_d1 = combined_roidb(args.D1_imdb_name)
+        # imdb_d2, roidb_d2, ratio_list_d2, ratio_index_d2 = combined_roidb(args.D2_imdb_name)
         
         train_size_s = len(roidb_s)   # add flipped         image_index*2
-        train_size_d1 = len(roidb_d1)   # add flipped         image_index*2
-        train_size_d2 = len(roidb_d2)   # add flipped         image_index*2
+        # train_size_d1 = len(roidb_d1)   # add flipped         image_index*2
+        # train_size_d2 = len(roidb_d2)   # add flipped         image_index*2
 
         print('{:d} source roidb entries'.format(len(roidb_s)))
-        print('{:d} domain1 roidb entries'.format(len(roidb_d1)))
-        print('{:d} domain2 roidb entries'.format(len(roidb_d2)))
+        # print('{:d} domain1 roidb entries'.format(len(roidb_d1)))
+        # print('{:d} domain2 roidb entries'.format(len(roidb_d2)))
 
         output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
         if not os.path.exists(output_dir):
@@ -525,17 +532,17 @@ if __name__ == '__main__':    #仅作为脚本运行
         dataloader_s = torch.utils.data.DataLoader(dataset_s, batch_size=args.batch_size,
                                     sampler=sampler_batch_s, num_workers=args.num_workers)
         
-        sampler_batch_d1 = sampler(train_size_d1, args.batch_size)
-        dataset_d1 = roibatchLoader(roidb_d1, ratio_list_d1, ratio_index_d1, args.batch_size, \
-                                imdb_d1.num_classes, training=True)
-        dataloader_d1 = torch.utils.data.DataLoader(dataset_d1, batch_size=args.batch_size,
-                                    sampler=sampler_batch_d1, num_workers=args.num_workers)
+        # sampler_batch_d1 = sampler(train_size_d1, args.batch_size)
+        # dataset_d1 = roibatchLoader(roidb_d1, ratio_list_d1, ratio_index_d1, args.batch_size, \
+        #                         imdb_d1.num_classes, training=True)
+        # dataloader_d1 = torch.utils.data.DataLoader(dataset_d1, batch_size=args.batch_size,
+        #                             sampler=sampler_batch_d1, num_workers=args.num_workers)
         
-        sampler_batch_d2 = sampler(train_size_d2, args.batch_size)
-        dataset_d2 = roibatchLoader(roidb_d2, ratio_list_d2, ratio_index_d2, args.batch_size, \
-                                imdb_d2.num_classes, training=True)
-        dataloader_d2 = torch.utils.data.DataLoader(dataset_d2, batch_size=args.batch_size,
-                                    sampler=sampler_batch_d2, num_workers=args.num_workers)
+        # sampler_batch_d2 = sampler(train_size_d2, args.batch_size)
+        # dataset_d2 = roibatchLoader(roidb_d2, ratio_list_d2, ratio_index_d2, args.batch_size, \
+        #                         imdb_d2.num_classes, training=True)
+        # dataloader_d2 = torch.utils.data.DataLoader(dataset_d2, batch_size=args.batch_size,
+        #                             sampler=sampler_batch_d2, num_workers=args.num_workers)
         
         # initilize the tensor holder here.
         im_data_s = torch.FloatTensor(1)
@@ -543,15 +550,15 @@ if __name__ == '__main__':    #仅作为脚本运行
         num_boxes_s = torch.LongTensor(1)
         gt_boxes_s = torch.FloatTensor(1)
 
-        im_data_d1 = torch.FloatTensor(1)
-        im_info_d1 = torch.FloatTensor(1)
-        num_boxes_d1 = torch.LongTensor(1)
-        gt_boxes_d1 = torch.FloatTensor(1)
+        # im_data_d1 = torch.FloatTensor(1)
+        # im_info_d1 = torch.FloatTensor(1)
+        # num_boxes_d1 = torch.LongTensor(1)
+        # gt_boxes_d1 = torch.FloatTensor(1)
         
-        im_data_d2 = torch.FloatTensor(1)
-        im_info_d2 = torch.FloatTensor(1)
-        num_boxes_d2 = torch.LongTensor(1)
-        gt_boxes_d2 = torch.FloatTensor(1)
+        # im_data_d2 = torch.FloatTensor(1)
+        # im_info_d2 = torch.FloatTensor(1)
+        # num_boxes_d2 = torch.LongTensor(1)
+        # gt_boxes_d2 = torch.FloatTensor(1)
 
         # ship to cuda
         if args.cuda:
@@ -560,15 +567,15 @@ if __name__ == '__main__':    #仅作为脚本运行
             num_boxes_s = num_boxes_s.cuda()
             gt_boxes_s = gt_boxes_s.cuda()
 
-            im_data_d1 = im_data_d1.cuda()
-            im_info_d1 = im_info_d1.cuda()
-            num_boxes_d1 = num_boxes_d1.cuda()
-            gt_boxes_d1 = gt_boxes_d1.cuda()
+            # im_data_d1 = im_data_d1.cuda()
+            # im_info_d1 = im_info_d1.cuda()
+            # num_boxes_d1 = num_boxes_d1.cuda()
+            # gt_boxes_d1 = gt_boxes_d1.cuda()
 
-            im_data_d2 = im_data_d2.cuda()
-            im_info_d2 = im_info_d2.cuda()
-            num_boxes_d2 = num_boxes_d2.cuda()
-            gt_boxes_d2 = gt_boxes_d2.cuda()
+            # im_data_d2 = im_data_d2.cuda()
+            # im_info_d2 = im_info_d2.cuda()
+            # num_boxes_d2 = num_boxes_d2.cuda()
+            # gt_boxes_d2 = gt_boxes_d2.cuda()
 
 
         # make variable
@@ -577,15 +584,15 @@ if __name__ == '__main__':    #仅作为脚本运行
         num_boxes_s = Variable(num_boxes_s)
         gt_boxes_s = Variable(gt_boxes_s)
 
-        im_data_d1 = Variable(im_data_d1)
-        im_info_d1 = Variable(im_info_d1)
-        num_boxes_d1 = Variable(num_boxes_d1)
-        gt_boxes_d1 = Variable(gt_boxes_d1)
+        # im_data_d1 = Variable(im_data_d1)
+        # im_info_d1 = Variable(im_info_d1)
+        # num_boxes_d1 = Variable(num_boxes_d1)
+        # gt_boxes_d1 = Variable(gt_boxes_d1)
 
-        im_data_d2 = Variable(im_data_d2)
-        im_info_d2 = Variable(im_info_d2)
-        num_boxes_d2 = Variable(num_boxes_d2)
-        gt_boxes_d2 = Variable(gt_boxes_d2)
+        # im_data_d2 = Variable(im_data_d2)
+        # im_info_d2 = Variable(im_info_d2)
+        # num_boxes_d2 = Variable(num_boxes_d2)
+        # gt_boxes_d2 = Variable(gt_boxes_d2)
 
         if args.cuda:
             cfg.CUDA = True
@@ -669,14 +676,14 @@ if __name__ == '__main__':    #仅作为脚本运行
 
             # 准备3个域的迭代器
             data_iter_s = iter(dataloader_s)
-            data_iter_d1 = iter(dataloader_d1)
-            data_iter_d2 = iter(dataloader_d2)
+            # data_iter_d1 = iter(dataloader_d1)
+            # data_iter_d2 = iter(dataloader_d2)
 
             # 进行batch迭代
             for step in range(iters_per_epoch):
                 data_s = next(data_iter_s)
-                data_d1 = next(data_iter_d1)
-                data_d2 = next(data_iter_d2)
+                # data_d1 = next(data_iter_d1)
+                # data_d2 = next(data_iter_d2)
 
                 # 针对 D_0 的训练 #########################
                 im_data_s.data.resize_(data_s[0].size()).copy_(data_s[0])   #change holder size
@@ -684,23 +691,23 @@ if __name__ == '__main__':    #仅作为脚本运行
                 gt_boxes_s.data.resize_(data_s[2].size()).copy_(data_s[2])
                 num_boxes_s.data.resize_(data_s[3].size()).copy_(data_s[3])
 
-                # 针对 D_1 的训练 ######################################
-                im_data_d1.data.resize_(data_d1[0].size()).copy_(data_d1[0])   #change holder size
-                im_info_d1.data.resize_(data_d1[1].size()).copy_(data_d1[1])
-                gt_boxes_d1.data.resize_(data_d1[2].size()).copy_(data_d1[2])
-                num_boxes_d1.data.resize_(data_d1[3].size()).copy_(data_d1[3])
+                # # 针对 D_1 的训练 ######################################
+                # im_data_d1.data.resize_(data_d1[0].size()).copy_(data_d1[0])   #change holder size
+                # im_info_d1.data.resize_(data_d1[1].size()).copy_(data_d1[1])
+                # gt_boxes_d1.data.resize_(data_d1[2].size()).copy_(data_d1[2])
+                # num_boxes_d1.data.resize_(data_d1[3].size()).copy_(data_d1[3])
 
-                # 针对 D_2 的训练 #########################
-                im_data_d2.data.resize_(data_d2[0].size()).copy_(data_d2[0])   #change holder size
-                im_info_d2.data.resize_(data_d2[1].size()).copy_(data_d2[1])
-                gt_boxes_d2.data.resize_(data_d2[2].size()).copy_(data_d2[2])
-                num_boxes_d2.data.resize_(data_d2[3].size()).copy_(data_d2[3])
+                # # 针对 D_2 的训练 #########################
+                # im_data_d2.data.resize_(data_d2[0].size()).copy_(data_d2[0])   #change holder size
+                # im_info_d2.data.resize_(data_d2[1].size()).copy_(data_d2[1])
+                # gt_boxes_d2.data.resize_(data_d2[2].size()).copy_(data_d2[2])
+                # num_boxes_d2.data.resize_(data_d2[3].size()).copy_(data_d2[3])
 
                 # 合并三个特征
-                im_data = torch.cat((im_data_s, im_data_d1, im_data_d2),0)
-                im_info = torch.cat((im_info_s, im_info_d1, im_info_d2),0)
-                gt_boxes = torch.cat((gt_boxes_s, gt_boxes_d1, gt_boxes_d2),0)
-                num_boxes = torch.cat((num_boxes_s, num_boxes_d1, num_boxes_d2),0)
+                # im_data = torch.cat((im_data_s, im_data_d1, im_data_d2),0)
+                # im_info = torch.cat((im_info_s, im_info_d1, im_info_d2),0)
+                # gt_boxes = torch.cat((gt_boxes_s, gt_boxes_d1, gt_boxes_d2),0)
+                # num_boxes = torch.cat((num_boxes_s, num_boxes_d1, num_boxes_d2),0)
 
                 fasterRCNN_DAD.zero_grad()
 
@@ -715,7 +722,7 @@ if __name__ == '__main__':    #仅作为脚本运行
                 d2_d02_img_loss_cls, d2_d02_ins_loss_cls, d2_d02_cst_loss, \
                 d1_d12_img_loss_cls, d1_d12_ins_loss_cls, d1_d12_cst_loss, \
                 d2_d12_img_loss_cls, d2_d12_ins_loss_cls, d2_d12_cst_loss \
-                     = fasterRCNN_DAD(im_data, im_info, gt_boxes, num_boxes)
+                     = fasterRCNN_DAD(im_data_s, im_info_s, gt_boxes_s, num_boxes_s)
 
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                     + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean() \
@@ -754,7 +761,8 @@ if __name__ == '__main__':    #仅作为脚本运行
                         fg_cnt = torch.sum(rois_label.data.ne(0))
                         bg_cnt = rois_label.data.numel() - fg_cnt
 
-                    print("[session %d][epoch %2d][iter %4d/%4d] loss: %.4f, lr: %.2e" \
+                    print(args.save_dir)
+                    print("[session %d][epoch %2d][iter %4d/%4d] \t\033[0;31m loss: %.4f\033[0m, lr: %.2e" \
                                             % (args.session, epoch, step, iters_per_epoch, loss_temp, lr))
                     print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end-start))
                     print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f" \
@@ -779,14 +787,15 @@ if __name__ == '__main__':    #仅作为脚本运行
                     'class_agnostic': args.class_agnostic,
                 }, save_name)
                 print('save model: {}'.format(save_name))
-                # map = test_model(save_name)
+                map = test_model(save_name, args)
                 # MAP write
-                # if args.log_flag:
-                #     with open(epoch_test_log_dir,"a") as f: 
-                #         f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
+                if args.log_flag:
+                    with open(epoch_test_log_dir,"a") as f: 
+                        f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )
     
     # train set
     if args.mode == "train_model":
         train_model()
     elif args.mode == "test_model":
-        test_model()
+        map = test_model(args.model_dir, args)
+        print("\n\tMAP: %s" % map)

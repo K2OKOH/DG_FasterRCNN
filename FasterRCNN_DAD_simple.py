@@ -34,7 +34,7 @@ from lib.roi_dg_data_layer.roidb_DG import combined_roidb
 from lib.roi_dg_data_layer.roibatchLoader import roibatchLoader
 from lib.model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from lib.model.utils.net_utils import weights_normal_init, save_net, load_net, \
-      adjust_learning_rate, save_checkpoint, clip_gradient
+        adjust_learning_rate, save_checkpoint, clip_gradient
 
 from lib.model.rpn.bbox_transform import clip_boxes
 from lib.model.nms.nms_wrapper import nms
@@ -726,7 +726,7 @@ if __name__ == '__main__':    #仅作为脚本运行
 
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                     + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean() \
-                    + 0.03*(   d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
+                    + 0*(d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
                             d1_d01_img_loss_cls.mean() + d1_d01_ins_loss_cls.mean() + d1_d01_cst_loss.mean() + \
                             d0_d02_img_loss_cls.mean() + d0_d02_ins_loss_cls.mean() + d0_d02_cst_loss.mean() + \
                             d2_d02_img_loss_cls.mean() + d2_d02_ins_loss_cls.mean() + d2_d02_cst_loss.mean() + \

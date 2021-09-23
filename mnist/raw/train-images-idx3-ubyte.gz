@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=GB2312" /> 
+<title></title> 
+</head> 
+<body> 
+<!--Dr.COMWebLoginID_0.htm-->
+<script type="text/javascript"> 
+carrier='';
+sv=1;sv1=0;v6='http://[2001:da8:c800:ffff::f212]:9002/v6               ';myv6ip='                                       ';v4serip='202.202.0.163'  ;m46=0;v46ip='172.20.37.30'                           ;
+vid=0   ;mip=172020037030;Gno=0000;vlanid="0"   ;AC="";                          ipm="caca00a3";ss1="000d4829ffd8";ss2="0000";ss3="ac14251e";ss4="000000000000";ss5="172.20.37.30"   ;ss6="202.202.0.163"  ;timet=1632130576; 
+
+authexenable=0;
+authtype=1;
+authloginport=80;
+authloginpath='';
+authloginparam='';
+authlogoutpath='';
+authlogoutport=80;
+queryport=80;
+isquery=0;
+querypath='';
+queryparam='';
+authhost='';
+authoffpost='';
+authsuccess='Dr.COMWebLoginID_3.htm';
+authuserfield='DDDDD';
+authpassfield='upass';
+
+portalid='CQ0300357_000';
+serialno='';
+portalname='重庆大学';
+logourl='';
+bannerurl='a59.png';
+welcome='';
+businessurl='';
+portalver='0010300000';
+
+var reg = new RegExp("(^|&)drcomver([^&]*)(&|$)", "i");
+var r = window.location.search.substr(1).match(reg);
+if(r != null)
+{
+	document.write("portalname="+portalname+"<br>");
+	document.write("portalide="+portalid+"<br>");
+	document.write("portalver="+portalver+"<br>");
+}else
+
+if((navigator.userAgent.indexOf('iPad') > 0) || (navigator.userAgent.indexOf('Windows NT') > 0))
+	location.href="0.htm"
+else if((navigator.userAgent.indexOf('Mobile') > 0) )  
+	location.href="a30.htm"
+else
+	location.href="0.htm"
+
+</script> 
+<div>您的设备已经禁止JAVASCRIPT<br>
+     PC请点击<a href="0.htm">这里</a>进入<br>
+     移动终端请点击<a href="a30.htm">这里</a>进入<br></div>
+</body> 
+</html>
