@@ -56,6 +56,46 @@ class autoencoder(nn.Module):
         return encode, decode
 
 
+class conv_autoencoder_h(nn.Module):
+    def __init__(self):
+        super(conv_autoencoder_h, self).__init__()
+        
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 32, 3, stride=3, padding=1),  # (b, 16, 10, 10)
+            nn.ReLU(True),
+            nn.Conv2d(32, 16, 3, stride=2, padding=1),  # (b, 16, 5, 5)
+            nn.ReLU(True),
+            nn.Conv2d(16, 8, 3, stride=2, padding=1),  # (b, 8, 3, 3)
+            nn.ReLU(True),
+            nn.Conv2d(8, 8, 3, stride=2, padding=1),  # (b, 8, 3, 3)
+            nn.ReLU(True),
+            # nn.Conv2d(8, 8, 3, stride=2, padding=1),  # (b, 8, 3, 3)
+            # nn.ReLU(True),
+            # nn.Conv2d(8, 8, 3, stride=2, padding=1),  # (b, 8, 3, 3)
+            # nn.ReLU(True),
+            # nn.MaxPool2d(2, stride=1)  # (b, 8, 2, 2)
+        )
+        
+        self.decoder = nn.Sequential(
+            # nn.ConvTranspose2d(8, 8, 3, stride=2),  # (b, 16, 5, 5)
+            # nn.ReLU(True),
+            # nn.ConvTranspose2d(8, 8, 3, stride=2),  # (b, 16, 5, 5)
+            # nn.ReLU(True),
+            nn.ConvTranspose2d(8, 8, 3, stride=2),  # (b, 16, 5, 5)
+            nn.ReLU(True),
+            nn.ConvTranspose2d(8, 16, 3, stride=2),  # (b, 16, 5, 5)
+            nn.ReLU(True),
+            nn.ConvTranspose2d(16, 32, 5, stride=3, padding=1),  # (b, 8, 15, 15)
+            nn.ReLU(True),
+            nn.ConvTranspose2d(32, 3, 2, stride=2, padding=1),  # (b, 1, 28, 28)
+            # nn.Tanh()
+        )
+
+    def forward(self, x):
+        encode = self.encoder(x)
+        decode = self.decoder(encode)
+        return encode, decode
+
 class conv_autoencoder(nn.Module):
     def __init__(self):
         super(conv_autoencoder, self).__init__()
@@ -91,26 +131,6 @@ def to_img(x):
     x = x.clamp(0, 1)
     x = x.view(x.shape[0], 1, 28, 28)
     return x
-
-# # 开始训练自动编码器
-# for e in range(100):
-#     for im, _ in train_data:
-#         # im = im.view(im.shape[0], -1)
-#         im = Variable(im)
-#         # 前向传播
-#         _, output = conv_net(im)
-#         loss = criterion(output, im) / im.shape[0] # 平均
-#         # 反向传播
-#         optimizer.zero_grad()
-#         loss.backward()
-#         optimizer.step()
-#     # if (e+1)%20==0:
-#     print('epoch: {}, Loss: {:.4f}'.format(e + 1, loss.item()))
-#     pic = to_img(output.cpu().data)
-#     if not os.path.exists('./simple_autoencoder'):
-#         os.mkdir('./simple_autoencoder')
-#     save_image(pic, './simple_autoencoder/image_conv_epoch{}.png'.format(e + 1))
-    
 
 class sampler(Sampler):
     def __init__(self, train_size, batch_size):
@@ -193,6 +213,12 @@ if __name__ == '__main__':    #仅作为脚本运行
     args = parse_args()
 
     setproctitle.setproctitle("< xmj_%s >" %args.task_name)
+
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+    img_dir = './SaveFile/image/encoder/' + args.task_name + '/'
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
     
     # 数据读取
     imdb_s, roidb_s, ratio_list_s, ratio_index_s = combined_roidb("cityscape_2007_train_s")
@@ -220,7 +246,8 @@ if __name__ == '__main__':    #仅作为脚本运行
     num_boxes_s = Variable(num_boxes_s)
     gt_boxes_s = Variable(gt_boxes_s)
 
-    AutoEncoder = conv_autoencoder()
+    AutoEncoder = conv_autoencoder_h()
+    # AutoEncoder = torch.load("./SaveFile/model/encoder/AE_Diff_3A.pth")
     if args.mGPUs:
         AutoEncoder = nn.DataParallel(AutoEncoder)
 
@@ -271,9 +298,9 @@ if __name__ == '__main__':    #仅作为脚本运行
 
                     img = img_de[0].cpu().detach().numpy().transpose((1, 2, 0))
                     img = np.clip(img, 0, 255)
-                    cv2.imwrite("./SaveFile/image/encoder/%s_%s_out.jpg" %(args.task_name, step+1), img)
+                    cv2.imwrite(img_dir + '%s_%s_1_out.jpg' %(args.task_name, step+1), img)
             
-            torch.save(AutoEncoder, args.save_dir) 
+            torch.save(AutoEncoder, args.save_dir + args.task_name + '.pth') 
             img = img_de[0].cpu().detach().numpy().transpose((1, 2, 0))
             img = np.clip(img, 0, 255)
             cv2.imwrite("./SaveFile/image/encoder/%s_e%s_out.jpg" %(args.task_name, epoch), img)

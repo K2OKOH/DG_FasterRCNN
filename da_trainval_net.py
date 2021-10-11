@@ -38,6 +38,9 @@ from lib.model.utils.net_utils import weights_normal_init, save_net, load_net, \
 from lib.model.da_faster_rcnn.vgg16 import vgg16
 from lib.model.da_faster_rcnn.resnet import resnet
 
+from test import test_model
+import setproctitle
+
 #from model.da_faster_rcnn.vgg16 import vgg16
 #from model.da_faster_rcnn.resnet import resnet
 
@@ -67,6 +70,9 @@ def parse_args():
                       help='number of iterations to display',
                       default=10000, type=int)
 
+  parser.add_argument('--part', dest='part',
+                      help='test_s or test_t or test_all', default="test_t",
+                      type=str)
   parser.add_argument('--save_dir', dest='save_dir',
                       help='directory to save models', default="./SaveFile/model/da_baseline",
                       type=str)
@@ -89,7 +95,7 @@ def parse_args():
                       help='whether perform class_agnostic bbox regression',
                       action='store_true')
 
-# config optimization
+  # config optimization
   parser.add_argument('--o', dest='optimizer',
                       help='training optimizer',
                       default="sgd", type=str)
@@ -107,12 +113,12 @@ def parse_args():
                       default=0.1, type=float)
 
 
-# set training session
+  # set training session
   parser.add_argument('--s', dest='session',
                       help='training session',
                       default=1, type=int)
 
-# resume trained model
+  # resume trained model
   parser.add_argument('--r', dest='resume',
                       help='resume checkpoint or not',
                       default=False, type=bool)
@@ -125,9 +131,19 @@ def parse_args():
   parser.add_argument('--checkpoint', dest='checkpoint',
                       help='checkpoint to load model',
                       default=0, type=int)
-# log and diaplay
+  # log and diaplay
   parser.add_argument('--use_tfb', dest='use_tfboard',
                       help='whether use tensorboard',
+                      action='store_true')
+  parser.add_argument('--log_flag', dest='log_flag', # add by xmj
+                      help='1:batch_loss, 2:epoch_test',
+                      default=0, type=int)
+
+  parser.add_argument('--model_dir', dest='model_dir', # add by xmj
+                      help='directory to load models', default="models.pth",
+                      type=str)
+  parser.add_argument('--vis', dest='vis',
+                      help='visualization mode',
                       action='store_true')
 
   args = parser.parse_args()
@@ -162,6 +178,8 @@ class sampler(Sampler):
 if __name__ == '__main__':
 
   args = parse_args()
+
+  setproctitle.setproctitle("< xmj_DA >")
 
   print('Called with args:')
   print(args)
@@ -212,6 +230,9 @@ if __name__ == '__main__':
   if torch.cuda.is_available() and not args.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
+  # 加载当前日期
+  M_D = time.strftime("(%b-%d[%H])", time.localtime())
+
   # train set
   # -- Note: Use validation set and disable the flipped to enable faster loading.
   cfg.TRAIN.USE_FLIPPED = True
@@ -229,6 +250,18 @@ if __name__ == '__main__':
   output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
+  
+  # 创建 log 目录
+  if args.log_flag:
+    log_dir = output_dir + '/log'
+    loss_log_dir = log_dir + '/loss_log.txt'
+    epoch_test_log_dir = log_dir + '/epoch_test_log.txt'
+    if not os.path.exists(log_dir):
+      os.mkdir(log_dir)
+    with open(loss_log_dir,"w") as f: 
+      f.write("[Date: %s]\r" %M_D)   #这句话自带文件关闭功能，不需要再写f.close( )
+    with open(epoch_test_log_dir,"w") as f: 
+      f.write("[Date: %s]\r" %M_D)   #这句话自带文件关闭功能，不需要再写f.close( )
 
   s_sampler_batch = sampler(s_train_size, args.batch_size)
   t_sampler_batch = sampler(t_train_size,args.batch_size)
@@ -435,6 +468,12 @@ if __name__ == '__main__':
         print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end-start))
         print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f,\n\t\t\timg_loss %.4f,ins_loss %.4f,,cst_loss %.4f" \
                       % (loss_rpn_cls, loss_rpn_box, loss_rcnn_cls, loss_rcnn_box,loss_DA_img_cls,loss_DA_ins_cls,loss_DA_cst))
+        
+        # loss write
+        if args.log_flag:
+          with open(loss_log_dir,"a") as f: 
+            f.write("  count: %s  \tloss: %f\r" % (step, loss_temp))   #这句话自带文件关闭功能，不需要再写f.close( )
+        
         if args.use_tfboard:
           info = {
             'loss': loss_temp,
@@ -458,3 +497,8 @@ if __name__ == '__main__':
             'class_agnostic': args.class_agnostic,
         }, save_name)
         print('save model: {}'.format(save_name))
+        map = test_model(save_name, args)
+        # MAP write
+        if args.log_flag:
+          with open(epoch_test_log_dir,"a") as f: 
+            f.write("  epoch: %s  \tmap: %f\r" % (epoch, map))   #这句话自带文件关闭功能，不需要再写f.close( )

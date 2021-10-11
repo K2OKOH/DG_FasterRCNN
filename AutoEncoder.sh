@@ -3,11 +3,11 @@
 
 echo "training program start!"
 
-CUDA_VISIBLE_DEVICES=2 python DiffCoder.py \
+CUDA_VISIBLE_DEVICES=3 python coder.py \
         --lr 2e-3 \
         --lr_decay_step 6 \
         --cuda \
         --epochs 10 \
         --bs 1 \
         --save_dir SaveFile/model/encoder/ \
-        --task_name AE_Diff_1 \
+        --task_name AE_H \

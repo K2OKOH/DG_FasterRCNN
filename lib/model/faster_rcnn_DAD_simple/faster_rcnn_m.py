@@ -56,19 +56,19 @@ class _fasterRCNN(nn.Module):
         # 输入三个域的图片
         im_data_d0 = im_data[0].unsqueeze(0)
         im_data_d1 = im_data[1].unsqueeze(0)
-        im_data_d2 = im_data[2].unsqueeze(0)
+        # im_data_d2 = im_data[2].unsqueeze(0)
 
         im_info_d0 = im_info[0].unsqueeze(0)
         im_info_d1 = im_info[1].unsqueeze(0)
-        im_info_d2 = im_info[2].unsqueeze(0)
+        # im_info_d2 = im_info[2].unsqueeze(0)
 
         gt_boxes_d0 = gt_boxes[0].unsqueeze(0)
         gt_boxes_d1 = gt_boxes[1].unsqueeze(0)
-        gt_boxes_d2 = gt_boxes[2].unsqueeze(0)
+        # gt_boxes_d2 = gt_boxes[2].unsqueeze(0)
 
         num_boxes_d0 = num_boxes[0].unsqueeze(0)
         num_boxes_d1 = num_boxes[1].unsqueeze(0)
-        num_boxes_d2 = num_boxes[2].unsqueeze(0)
+        # num_boxes_d2 = num_boxes[2].unsqueeze(0)
 
         batch_size = im_data_d0.size(0)
         
@@ -80,15 +80,15 @@ class _fasterRCNN(nn.Module):
         gt_boxes_d1 = gt_boxes_d1.data
         num_boxes_d1 = num_boxes_d1.data
 
-        im_info_d2 = im_info_d2.data     #(size1,size2, image ratio(new image / source image) )
-        gt_boxes_d2 = gt_boxes_d2.data
-        num_boxes_d2 = num_boxes_d2.data
+        # im_info_d2 = im_info_d2.data     #(size1,size2, image ratio(new image / source image) )
+        # gt_boxes_d2 = gt_boxes_d2.data
+        # num_boxes_d2 = num_boxes_d2.data
 
         # feed image data to base model to obtain base feature map
         # 提取三张图的FeatureMap
         base_feat_d0 = self.RCNN_base(im_data_d0)
         base_feat_d1 = self.RCNN_base(im_data_d1)
-        base_feat_d2 = self.RCNN_base(im_data_d2)
+        # base_feat_d2 = self.RCNN_base(im_data_d2)
 
         # feed base feature map tp RPN to obtain rois
         self.RCNN_rpn.train()
@@ -106,7 +106,7 @@ class _fasterRCNN(nn.Module):
         '''
         rois_d0, rpn_loss_cls_d0, rpn_loss_bbox_d0 = self.RCNN_rpn(base_feat_d0, im_info_d0, gt_boxes_d0, num_boxes_d0)
         rois_d1, rpn_loss_cls_d1, rpn_loss_bbox_d1 = self.RCNN_rpn(base_feat_d1, im_info_d1, gt_boxes_d1, num_boxes_d1)
-        rois_d2, rpn_loss_cls_d2, rpn_loss_bbox_d2 = self.RCNN_rpn(base_feat_d2, im_info_d2, gt_boxes_d2, num_boxes_d2)
+        # rois_d2, rpn_loss_cls_d2, rpn_loss_bbox_d2 = self.RCNN_rpn(base_feat_d2, im_info_d2, gt_boxes_d2, num_boxes_d2)
 
         # if it is training phrase, then use ground trubut bboxes for refining
         # 训练过程要控制roi的数量，因为是DG任务，每个domain都是有标签的
@@ -146,13 +146,13 @@ class _fasterRCNN(nn.Module):
             rois_inside_ws_d1 = Variable(rois_inside_ws_d1.view(-1, rois_inside_ws_d1.size(2)))
             rois_outside_ws_d1 = Variable(rois_outside_ws_d1.view(-1, rois_outside_ws_d1.size(2)))
 
-            rois_d2, rois_label_d2, rois_target_d2, rois_inside_ws_d2, rois_outside_ws_d2 \
-                        = self.RCNN_proposal_target(rois_d2, gt_boxes_d2, num_boxes_d2)
+            # rois_d2, rois_label_d2, rois_target_d2, rois_inside_ws_d2, rois_outside_ws_d2 \
+            #             = self.RCNN_proposal_target(rois_d2, gt_boxes_d2, num_boxes_d2)
 
-            rois_label_d2 = Variable(rois_label_d2.view(-1).long())
-            rois_target_d2 = Variable(rois_target_d2.view(-1, rois_target_d2.size(2)))
-            rois_inside_ws_d2 = Variable(rois_inside_ws_d2.view(-1, rois_inside_ws_d2.size(2)))
-            rois_outside_ws_d2 = Variable(rois_outside_ws_d2.view(-1, rois_outside_ws_d2.size(2)))
+            # rois_label_d2 = Variable(rois_label_d2.view(-1).long())
+            # rois_target_d2 = Variable(rois_target_d2.view(-1, rois_target_d2.size(2)))
+            # rois_inside_ws_d2 = Variable(rois_inside_ws_d2.view(-1, rois_inside_ws_d2.size(2)))
+            # rois_outside_ws_d2 = Variable(rois_outside_ws_d2.view(-1, rois_outside_ws_d2.size(2)))
         else:
             rois_label = None
             rois_target = None
@@ -163,7 +163,7 @@ class _fasterRCNN(nn.Module):
 
         rois_d0 = Variable(rois_d0)
         rois_d1 = Variable(rois_d1)
-        rois_d2 = Variable(rois_d2)
+        # rois_d2 = Variable(rois_d2)
         # print("roi: ",rois.size())
         # do roi pooling based on predicted rois
 
@@ -179,7 +179,7 @@ class _fasterRCNN(nn.Module):
         elif cfg.POOLING_MODE == 'align':
             pooled_feat_d0 = self.RCNN_roi_align(base_feat_d0, rois_d0.view(-1, 5))
             pooled_feat_d1 = self.RCNN_roi_align(base_feat_d1, rois_d1.view(-1, 5))
-            pooled_feat_d2 = self.RCNN_roi_align(base_feat_d2, rois_d2.view(-1, 5))
+            # pooled_feat_d2 = self.RCNN_roi_align(base_feat_d2, rois_d2.view(-1, 5))
         elif cfg.POOLING_MODE == 'pool':
             pooled_feat_d0 = self.RCNN_roi_pool(base_feat_d0, rois_d0.view(-1,5))
             
@@ -191,7 +191,7 @@ class _fasterRCNN(nn.Module):
         # 利用vgg16的顶层(除最后一层) 输出 4096 个值
         pooled_feat_d0 = self._head_to_tail(pooled_feat_d0)
         pooled_feat_d1 = self._head_to_tail(pooled_feat_d1)
-        pooled_feat_d2 = self._head_to_tail(pooled_feat_d2)
+        # pooled_feat_d2 = self._head_to_tail(pooled_feat_d2)
 
         # ============================= reg & cls ========================================
         # ========================= 使用 d0 分类, 回归 =====================================
@@ -248,6 +248,7 @@ class _fasterRCNN(nn.Module):
         cls_prob_d1 = cls_prob_d1.view(batch_size, rois_d1.size(1), -1)
         bbox_pred_d1 = bbox_pred_d1.view(batch_size, rois_d1.size(1), -1)
 
+        '''
         # ========================= 使用 d2 分类, 回归 =====================================
         # compute bbox offset
         # 是回归输出 4 * class 个值, bbox_pred -> ([256, 4*9])
@@ -274,9 +275,9 @@ class _fasterRCNN(nn.Module):
 
         cls_prob_d2 = cls_prob_d2.view(batch_size, rois_d2.size(1), -1)
         bbox_pred_d2 = bbox_pred_d2.view(batch_size, rois_d2.size(1), -1)
+        '''
 
         #=========================开始进行域泛化============================#
-        
         #========= d01 classifier: img & ins & cons ==========#
 
         ## d0
@@ -318,6 +319,8 @@ class _fasterRCNN(nn.Module):
         consistency_prob=torch.mean(consistency_prob)
         consistency_prob=consistency_prob.repeat(instance_sigmoid.size())
         d1_d01_cst_loss=self.consistency_loss(instance_sigmoid,consistency_prob.detach())
+
+        '''
 
         #========= d12 classifier: img & ins & cons ==========#
 
@@ -403,6 +406,8 @@ class _fasterRCNN(nn.Module):
         consistency_prob=consistency_prob.repeat(instance_sigmoid.size())
         d2_d02_cst_loss=self.consistency_loss(instance_sigmoid,consistency_prob.detach())
 
+        '''
+
         """  ************** taget loss ****************  """
 
         # if self.training:
@@ -442,11 +447,11 @@ class _fasterRCNN(nn.Module):
                 rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox, \
                 rois_label_d0, \
                 d0_d01_img_loss_cls, d0_d01_ins_loss_cls, d0_d01_cst_loss, \
-                d1_d01_img_loss_cls, d1_d01_ins_loss_cls, d1_d01_cst_loss, \
-                d0_d02_img_loss_cls, d0_d02_ins_loss_cls, d0_d02_cst_loss, \
-                d2_d02_img_loss_cls, d2_d02_ins_loss_cls, d2_d02_cst_loss, \
-                d1_d12_img_loss_cls, d1_d12_ins_loss_cls, d1_d12_cst_loss, \
-                d2_d12_img_loss_cls, d2_d12_ins_loss_cls, d2_d12_cst_loss
+                d1_d01_img_loss_cls, d1_d01_ins_loss_cls, d1_d01_cst_loss#, \
+                # d0_d02_img_loss_cls, d0_d02_ins_loss_cls, d0_d02_cst_loss, \
+                # d2_d02_img_loss_cls, d2_d02_ins_loss_cls, d2_d02_cst_loss, \
+                # d1_d12_img_loss_cls, d1_d12_ins_loss_cls, d1_d12_cst_loss, \
+                # d2_d12_img_loss_cls, d2_d12_ins_loss_cls, d2_d12_cst_loss
 
     def _init_weights(self):
         def normal_init(m, mean, stddev, truncated=False):

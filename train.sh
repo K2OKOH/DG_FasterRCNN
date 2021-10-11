@@ -3,7 +3,7 @@
 
 echo "training program start!"
 
-CUDA_VISIBLE_DEVICES=1 python trainval_net.py \
+CUDA_VISIBLE_DEVICES=2 python FasterRCNN_DAD_simple.py \
         --dataset cityscape \
         --net vgg16 \
         --lr 2e-3 \
@@ -11,9 +11,9 @@ CUDA_VISIBLE_DEVICES=1 python trainval_net.py \
         --cuda \
         --epochs 10 \
         --bs 1 \
-        --save_dir ./SaveFile/model/source+target \
-        # --mode train_model \
-        # --log_flag 1 \
+        --save_dir ./SaveFile/model/DG_gd_00 \
+        --mode train_model \
+        --log_flag 1 \
         # --mGPUs \
 #       --r True \
 #       --loadname s_cityscape_e6.pth \

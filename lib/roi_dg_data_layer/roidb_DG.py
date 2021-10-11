@@ -108,7 +108,7 @@ def combined_roidb(imdb_names, training=True):   #dataset name
         if cfg.TRAIN.USE_FLIPPED:
             print('Appending horizontally-flipped training examples...')
             imdb.append_flipped_images()    #  data augment
-            imdb.append_loop_images(14962)
+            # imdb.append_loop_images(14962)
             print('done')
 
         print('Preparing training data...')

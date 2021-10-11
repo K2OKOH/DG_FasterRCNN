@@ -268,6 +268,7 @@ __C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..', '..'))
 
 # Data directory
 __C.DATA_DIR = osp.abspath(osp.join(__C.ROOT_DIR, '..', 'DataSet'))
+# __C.DATA_DIR = osp.abspath(osp.join(__C.ROOT_DIR, '..', '../data/cityscape_dg/cityscape_augmentied'))
 
 # Name (or path to) the matlab executable
 __C.MATLAB = 'matlab'

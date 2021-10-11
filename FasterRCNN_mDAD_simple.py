@@ -48,13 +48,6 @@ import torchvision.utils as vutils
 from test import test_model
 import setproctitle
 
-def setup_seed(seed):
-     torch.manual_seed(seed)
-     torch.cuda.manual_seed_all(seed)
-     np.random.seed(seed)
-    #  random.seed(seed)
-     torch.backends.cudnn.deterministic = True
-
 def parse_args():
     """
     Parse input arguments
@@ -158,56 +151,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def draw_box(draw_box,image,color,width=4):
-    image = image.data.cpu().numpy()
-
-    if len(draw_box.size()) == 3:
-        draw_box = draw_box[0]
-    elif len(draw_box.size()) == 2:
-        draw_box = draw_box
-
-    if color == "RED":
-        box_RGB = [1,0,0]
-        print("\033[5;31mGT:\033[0m")
-    elif color == "GREEN":
-        box_RGB = [0,1,0]
-        print("\033[5;32mATTACK:\033[0m")
-    elif color == "BLUE":
-        box_RGB = [0,0,1]
-        print("\033[5;34mPATCH:\033[0m")
-    elif color == "YELLOW":
-        box_RGB = [1,1,0]
-        print("\033[5;33mPRE:\033[0m")
-        
-    for i in range(draw_box.size(0)):
-        box = draw_box[i]
-        box = box.cpu().numpy()
-
-        w_s = int(box[0])
-        h_s = int(box[1])
-        w_e = int(box[2])
-        h_e = int(box[3])
-        
-        # R
-        image[0, 0, h_s:h_e, w_s:w_s+width] = box_RGB[0]
-        image[0, 0, h_s:h_e, w_e-width:w_e] = box_RGB[0]
-        image[0, 0, h_s:h_s+width, w_s:w_e] = box_RGB[0]
-        image[0, 0, h_e-width:h_e, w_s:w_e] = box_RGB[0]
-        # G
-        image[0, 1, h_s:h_e, w_s:w_s+width] = box_RGB[1]
-        image[0, 1, h_s:h_e, w_e-width:w_e] = box_RGB[1]
-        image[0, 1, h_s:h_s+width, w_s:w_e] = box_RGB[1]
-        image[0, 1, h_e-width:h_e, w_s:w_e] = box_RGB[1]
-        # B
-        image[0, 2, h_s:h_e, w_s:w_s+width] = box_RGB[2]
-        image[0, 2, h_s:h_e, w_e-width:w_e] = box_RGB[2]
-        image[0, 2, h_s:h_s+width, w_s:w_e] = box_RGB[2]
-        image[0, 2, h_e-width:h_e, w_s:w_e] = box_RGB[2]
-
-        print("No.%d\ts: (%s,%s)\te: (%s,%s)" % (i,w_s,h_s,w_e,h_e))
-
-    return torch.from_numpy(image)
-
 class sampler(Sampler):
     def __init__(self, train_size, batch_size):
         self.num_data = train_size
@@ -237,8 +180,6 @@ if __name__ == '__main__':    #仅作为脚本运行
 
     setproctitle.setproctitle("< xmj_DG_31 >")
 
-    setup_seed(20)
-
     args = parse_args()
 
     print('Called with args:')
@@ -255,6 +196,7 @@ if __name__ == '__main__':    #仅作为脚本运行
         args.t_imdb_name = "cityscape_2007_train_t"
         args.D1_imdb_name = "domain1_2007_train_s"
         args.D2_imdb_name = "domain2_2007_train_s"
+        args.Dqs1_imdb_name = "domain_qs1_2007_train_s"
         args.DRB_imdb_name = "domain_RB_2007_train_s"
         args.DGY_imdb_name = "domain_GY_2007_train_s"
         args.DRB2_imdb_name = "domain_RB2_2007_train_s"
@@ -301,197 +243,6 @@ if __name__ == '__main__':    #仅作为脚本运行
     # 加载当前日期
     M_D = time.strftime("(%b-%d[%H])", time.localtime())
 
-    """
-    def test_model(test_model_dir = args.model_dir):
-        print(">>test model start")
-
-        imdb, roidb, ratio_list, ratio_index = combined_roidb(args.t_imdbtest_name, False)
-        imdb.competition_mode(on=True)
-
-        print('{:d} roidb entries'.format(len(roidb)))
-
-        load_name=test_model_dir
-
-        # initilize the network here.
-        if args.net == 'vgg16':
-            fasterRCNN_DAD = vgg16(imdb.classes, pretrained=False, class_agnostic=args.class_agnostic)
-        elif args.net == 'res101':
-            fasterRCNN_DAD = resnet(imdb.classes, 101, pretrained=False, class_agnostic=args.class_agnostic)
-        elif args.net == 'res50':
-            fasterRCNN_DAD = resnet(imdb.classes, 50, pretrained=False, class_agnostic=args.class_agnostic)
-        elif args.net == 'res152':
-            fasterRCNN_DAD = resnet(imdb.classes, 152, pretrained=False, class_agnostic=args.class_agnostic)
-        else:
-            print("network is not defined")
-            pdb.set_trace()
-
-        fasterRCNN_DAD.create_architecture()
-
-        print("load checkpoint %s" % (load_name))
-        checkpoint = torch.load(load_name)
-        fasterRCNN_DAD.load_state_dict({k: v for k, v in checkpoint['model'].items() if k in fasterRCNN_DAD.state_dict()})
-        #fasterRCNN.load_state_dict(checkpoint['model'])
-        if 'pooling_mode' in checkpoint.keys():
-            cfg.POOLING_MODE = checkpoint['pooling_mode']
-
-        print('load model successfully!')
-        # initilize the tensor holder here.
-        im_data = torch.FloatTensor(1)
-        im_info = torch.FloatTensor(1)
-        num_boxes = torch.LongTensor(1)
-        gt_boxes = torch.FloatTensor(1)
-
-        # ship to cuda
-        if args.cuda:
-            im_data = im_data.cuda()
-            im_info = im_info.cuda()
-            num_boxes = num_boxes.cuda()
-            gt_boxes = gt_boxes.cuda()
-
-        # make variable
-        im_data = Variable(im_data)
-        im_info = Variable(im_info)
-        num_boxes = Variable(num_boxes)
-        gt_boxes = Variable(gt_boxes)
-
-        if args.cuda:
-            cfg.CUDA = True
-
-        if args.cuda:
-            fasterRCNN_DAD.cuda()
-
-        start = time.time()
-        max_per_image = 100
-
-        vis = args.vis
-
-        if vis:
-            thresh = 0.05
-        else:
-            thresh = 0.0
-
-        save_name = args.part+'_faster_rcnn_10'
-        num_images = len(imdb.image_index)
-        all_boxes = [[[] for _ in range(num_images)]
-                    for _ in range(imdb.num_classes)]
-
-        output_dir = get_output_dir(imdb, save_name)
-        dataset = roibatchLoader(roidb, ratio_list, ratio_index, 1, \
-                                imdb.num_classes, training=False, normalize = False)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
-                                    shuffle=False, num_workers=0,
-                                    pin_memory=True)
-
-        data_iter = iter(dataloader)
-
-        _t = {'im_detect': time.time(), 'misc': time.time()}
-        det_file = os.path.join(output_dir, 'detections.pkl')
-
-        fasterRCNN_DAD.eval()
-        empty_array = np.transpose(np.array([[],[],[],[],[]]), (1,0))
-        for i in range(num_images):
-
-            data = next(data_iter)
-            im_data.data.resize_(data[0].size()).copy_(data[0])
-            im_info.data.resize_(data[1].size()).copy_(data[1])
-            gt_boxes.data.resize_(data[2].size()).copy_(data[2])
-            num_boxes.data.resize_(data[3].size()).copy_(data[3])
-
-            det_tic = time.time()
-            rois, cls_prob, bbox_pred, \
-            rpn_loss_cls, rpn_loss_box, \
-            RCNN_loss_cls, RCNN_loss_bbox, \
-            rois_label = fasterRCNN_DAD(im_data, im_info, gt_boxes, num_boxes)
-
-            scores = cls_prob.data
-            boxes = rois.data[:, :, 1:5]
-
-            if cfg.TEST.BBOX_REG:
-                # Apply bounding-box regression deltas
-                box_deltas = bbox_pred.data
-                if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
-                # Optionally normalize targets by a precomputed mean and stdev
-                    if args.class_agnostic:
-                        box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                                + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
-                        box_deltas = box_deltas.view(1, -1, 4)
-                    else:
-                        box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                                + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
-                        box_deltas = box_deltas.view(1, -1, 4 * len(imdb.classes))
-
-                pred_boxes = bbox_transform_inv(boxes, box_deltas, 1)
-                pred_boxes = clip_boxes(pred_boxes, im_info.data, 1)
-            else:
-                # Simply repeat the boxes, once for each class
-                pred_boxes = np.tile(boxes, (1, scores.shape[1]))
-
-            pred_boxes /= data[1][0][2].item()
-
-            scores = scores.squeeze()
-            pred_boxes = pred_boxes.squeeze()
-            det_toc = time.time()
-            detect_time = det_toc - det_tic
-            misc_tic = time.time()
-            if vis:
-                im = cv2.imread(imdb.image_path_at(i))
-                im2show = np.copy(im)
-            for j in range(1, imdb.num_classes):
-                inds = torch.nonzero(scores[:,j]>thresh).view(-1)
-                # if there is det
-                if inds.numel() > 0:
-                    cls_scores = scores[:,j][inds]
-                    _, order = torch.sort(cls_scores, 0, True)
-                    if args.class_agnostic:
-                        cls_boxes = pred_boxes[inds, :]
-                    else:
-                        cls_boxes = pred_boxes[inds][:, j * 4:(j + 1) * 4]
-                    
-                    cls_dets = torch.cat((cls_boxes, cls_scores.unsqueeze(1)), 1)
-                    # cls_dets = torch.cat((cls_boxes, cls_scores), 1)
-                    cls_dets = cls_dets[order]
-                    keep = nms(cls_dets, cfg.TEST.NMS)
-                    cls_dets = cls_dets[keep.view(-1).long()]
-                    if vis:
-                        im2show = vis_detections(im2show, imdb.classes[j], cls_dets.cpu().numpy(), 0.3)
-                    all_boxes[j][i] = cls_dets.cpu().numpy()
-                else:
-                    all_boxes[j][i] = empty_array
-
-            # Limit to max_per_image detections *over all classes*
-            if max_per_image > 0:
-                image_scores = np.hstack([all_boxes[j][i][:, -1]
-                                            for j in range(1, imdb.num_classes)])
-                if len(image_scores) > max_per_image:
-                    image_thresh = np.sort(image_scores)[-max_per_image]
-                    for j in range(1, imdb.num_classes):
-                        keep = np.where(all_boxes[j][i][:, -1] >= image_thresh)[0]
-                        all_boxes[j][i] = all_boxes[j][i][keep, :]
-
-            misc_toc = time.time()
-            nms_time = misc_toc - misc_tic
-
-            sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
-                .format(i + 1, num_images, detect_time, nms_time))
-            sys.stdout.flush()
-
-            if vis:
-                cv2.imwrite('result.png', im2show)
-                pdb.set_trace()
-                #cv2.imshow('test', im2show)
-                #cv2.waitKey(0)
-
-        with open(det_file, 'wb') as f:
-            pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
-
-        print('Evaluating detections')
-        map = imdb.evaluate_detections(all_boxes, output_dir)
-
-        end = time.time()
-        print("test time: %0.4fs" % (end - start))
-        return map
-    """
-
     def train_model():
         print(">>train model start")
         # -- Note: Use validation set and disable the flipped to enable faster loading.
@@ -506,16 +257,16 @@ if __name__ == '__main__':    #仅作为脚本运行
         # 读取三个域的数据
         imdb_s, roidb_s, ratio_list_s, ratio_index_s = combined_roidb(args.s_imdb_name)
         # imdb_d1, roidb_d1, ratio_list_d1, ratio_index_d1 = combined_roidb(args.t_imdb_name)
-        imdb_d1, roidb_d1, ratio_list_d1, ratio_index_d1 = combined_roidb(args.DRB2_imdb_name)
-        imdb_d2, roidb_d2, ratio_list_d2, ratio_index_d2 = combined_roidb(args.DGY2_imdb_name)
+        imdb_d1, roidb_d1, ratio_list_d1, ratio_index_d1 = combined_roidb(args.Dqs1_imdb_name)
+        # imdb_d2, roidb_d2, ratio_list_d2, ratio_index_d2 = combined_roidb(args.DGY2_imdb_name)
         
         train_size_s = len(roidb_s)   # add flipped         image_index*2
         train_size_d1 = len(roidb_d1)   # add flipped         image_index*2
-        train_size_d2 = len(roidb_d2)   # add flipped         image_index*2
+        # train_size_d2 = len(roidb_d2)   # add flipped         image_index*2
 
         print('{:d} source roidb entries'.format(len(roidb_s)))
         print('{:d} domain1 roidb entries'.format(len(roidb_d1)))
-        print('{:d} domain2 roidb entries'.format(len(roidb_d2)))
+        # print('{:d} domain2 roidb entries'.format(len(roidb_d2)))
 
         output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
         if not os.path.exists(output_dir):
@@ -544,13 +295,13 @@ if __name__ == '__main__':    #仅作为脚本运行
                                 imdb_d1.num_classes, training=True)
         dataloader_d1 = torch.utils.data.DataLoader(dataset_d1, batch_size=args.batch_size,
                                     sampler=sampler_batch_d1, num_workers=args.num_workers)
-        
+        '''
         sampler_batch_d2 = sampler(train_size_d2, args.batch_size)
         dataset_d2 = roibatchLoader(roidb_d2, ratio_list_d2, ratio_index_d2, args.batch_size, \
                                 imdb_d2.num_classes, training=True)
         dataloader_d2 = torch.utils.data.DataLoader(dataset_d2, batch_size=args.batch_size,
                                     sampler=sampler_batch_d2, num_workers=args.num_workers)
-        
+        '''
         # initilize the tensor holder here.
         im_data_s = torch.FloatTensor(1)
         im_info_s = torch.FloatTensor(1)
@@ -562,10 +313,10 @@ if __name__ == '__main__':    #仅作为脚本运行
         num_boxes_d1 = torch.LongTensor(1)
         gt_boxes_d1 = torch.FloatTensor(1)
         
-        im_data_d2 = torch.FloatTensor(1)
-        im_info_d2 = torch.FloatTensor(1)
-        num_boxes_d2 = torch.LongTensor(1)
-        gt_boxes_d2 = torch.FloatTensor(1)
+        # im_data_d2 = torch.FloatTensor(1)
+        # im_info_d2 = torch.FloatTensor(1)
+        # num_boxes_d2 = torch.LongTensor(1)
+        # gt_boxes_d2 = torch.FloatTensor(1)
 
         # ship to cuda
         if args.cuda:
@@ -579,10 +330,10 @@ if __name__ == '__main__':    #仅作为脚本运行
             num_boxes_d1 = num_boxes_d1.cuda()
             gt_boxes_d1 = gt_boxes_d1.cuda()
 
-            im_data_d2 = im_data_d2.cuda()
-            im_info_d2 = im_info_d2.cuda()
-            num_boxes_d2 = num_boxes_d2.cuda()
-            gt_boxes_d2 = gt_boxes_d2.cuda()
+            # im_data_d2 = im_data_d2.cuda()
+            # im_info_d2 = im_info_d2.cuda()
+            # num_boxes_d2 = num_boxes_d2.cuda()
+            # gt_boxes_d2 = gt_boxes_d2.cuda()
 
 
         # make variable
@@ -596,10 +347,10 @@ if __name__ == '__main__':    #仅作为脚本运行
         num_boxes_d1 = Variable(num_boxes_d1)
         gt_boxes_d1 = Variable(gt_boxes_d1)
 
-        im_data_d2 = Variable(im_data_d2)
-        im_info_d2 = Variable(im_info_d2)
-        num_boxes_d2 = Variable(num_boxes_d2)
-        gt_boxes_d2 = Variable(gt_boxes_d2)
+        # im_data_d2 = Variable(im_data_d2)
+        # im_info_d2 = Variable(im_info_d2)
+        # num_boxes_d2 = Variable(num_boxes_d2)
+        # gt_boxes_d2 = Variable(gt_boxes_d2)
 
         if args.cuda:
             cfg.CUDA = True
@@ -684,13 +435,13 @@ if __name__ == '__main__':    #仅作为脚本运行
             # 准备3个域的迭代器
             data_iter_s = iter(dataloader_s)
             data_iter_d1 = iter(dataloader_d1)
-            data_iter_d2 = iter(dataloader_d2)
+            # data_iter_d2 = iter(dataloader_d2)
 
             # 进行batch迭代
             for step in range(iters_per_epoch):
                 data_s = next(data_iter_s)
                 data_d1 = next(data_iter_d1)
-                data_d2 = next(data_iter_d2)
+                # data_d2 = next(data_iter_d2)
 
                 # 针对 D_0 的训练 #########################
                 im_data_s.data.resize_(data_s[0].size()).copy_(data_s[0])   #change holder size
@@ -705,20 +456,20 @@ if __name__ == '__main__':    #仅作为脚本运行
                 num_boxes_d1.data.resize_(data_d1[3].size()).copy_(data_d1[3])
 
                 # 针对 D_2 的训练 #########################
-                im_data_d2.data.resize_(data_d2[0].size()).copy_(data_d2[0])   #change holder size
-                im_info_d2.data.resize_(data_d2[1].size()).copy_(data_d2[1])
-                gt_boxes_d2.data.resize_(data_d2[2].size()).copy_(data_d2[2])
-                num_boxes_d2.data.resize_(data_d2[3].size()).copy_(data_d2[3])
+                # im_data_d2.data.resize_(data_d2[0].size()).copy_(data_d2[0])   #change holder size
+                # im_info_d2.data.resize_(data_d2[1].size()).copy_(data_d2[1])
+                # gt_boxes_d2.data.resize_(data_d2[2].size()).copy_(data_d2[2])
+                # num_boxes_d2.data.resize_(data_d2[3].size()).copy_(data_d2[3])
 
                 # 合并三个特征
-                # im_data = torch.cat((im_data_s, im_data_d1),0)
-                # im_info = torch.cat((im_info_s, im_info_d1),0)
-                # gt_boxes = torch.cat((gt_boxes_s, gt_boxes_d1),0)
-                # num_boxes = torch.cat((num_boxes_s, num_boxes_d1),0)
-                im_data = torch.cat((im_data_s, im_data_d1, im_data_d2),0)
-                im_info = torch.cat((im_info_s, im_info_d1, im_info_d2),0)
-                gt_boxes = torch.cat((gt_boxes_s, gt_boxes_d1, gt_boxes_d2),0)
-                num_boxes = torch.cat((num_boxes_s, num_boxes_d1, num_boxes_d2),0)
+                im_data = torch.cat((im_data_s, im_data_d1),0)
+                im_info = torch.cat((im_info_s, im_info_d1),0)
+                gt_boxes = torch.cat((gt_boxes_s, gt_boxes_d1),0)
+                num_boxes = torch.cat((num_boxes_s, num_boxes_d1),0)
+                # im_data = torch.cat((im_data_s, im_data_d1, im_data_d2),0)
+                # im_info = torch.cat((im_info_s, im_info_d1, im_info_d2),0)
+                # gt_boxes = torch.cat((gt_boxes_s, gt_boxes_d1, gt_boxes_d2),0)
+                # num_boxes = torch.cat((num_boxes_s, num_boxes_d1, num_boxes_d2),0)
 
                 fasterRCNN_DAD.zero_grad()
 
@@ -729,18 +480,19 @@ if __name__ == '__main__':    #仅作为脚本运行
                 rois_label, \
                 d0_d01_img_loss_cls, d0_d01_ins_loss_cls, d0_d01_cst_loss, \
                 d1_d01_img_loss_cls, d1_d01_ins_loss_cls, d1_d01_cst_loss, \
-                d0_d02_img_loss_cls, d0_d02_ins_loss_cls, d0_d02_cst_loss, \
-                d2_d02_img_loss_cls, d2_d02_ins_loss_cls, d2_d02_cst_loss, \
-                d1_d12_img_loss_cls, d1_d12_ins_loss_cls, d1_d12_cst_loss, \
-                d2_d12_img_loss_cls, d2_d12_ins_loss_cls, d2_d12_cst_loss \
                         = fasterRCNN_DAD(im_data, im_info, gt_boxes, num_boxes)
+                # d0_d02_img_loss_cls, d0_d02_ins_loss_cls, d0_d02_cst_loss, \
+                # d2_d02_img_loss_cls, d2_d02_ins_loss_cls, d2_d02_cst_loss, \
+                # d1_d12_img_loss_cls, d1_d12_ins_loss_cls, d1_d12_cst_loss, \
+                # d2_d12_img_loss_cls, d2_d12_ins_loss_cls, d2_d12_cst_loss \
+                #         = fasterRCNN_DAD(im_data, im_info, gt_boxes, num_boxes)
 
-                da_loss =0*(d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
-                            d1_d01_img_loss_cls.mean() + d1_d01_ins_loss_cls.mean() + d1_d01_cst_loss.mean() + \
-                            d0_d02_img_loss_cls.mean() + d0_d02_ins_loss_cls.mean() + d0_d02_cst_loss.mean() + \
-                            d2_d02_img_loss_cls.mean() + d2_d02_ins_loss_cls.mean() + d2_d02_cst_loss.mean() + \
-                            d1_d12_img_loss_cls.mean() + d1_d12_ins_loss_cls.mean() + d1_d12_cst_loss.mean() + \
-                            d2_d12_img_loss_cls.mean() + d2_d12_ins_loss_cls.mean() + d2_d12_cst_loss.mean()) 
+                da_loss =0.1*(d0_d01_img_loss_cls.mean() + d0_d01_ins_loss_cls.mean() + d0_d01_cst_loss.mean() + \
+                            d1_d01_img_loss_cls.mean() + d1_d01_ins_loss_cls.mean() + d1_d01_cst_loss.mean())# + \
+                            # d0_d02_img_loss_cls.mean() + d0_d02_ins_loss_cls.mean() + d0_d02_cst_loss.mean() + \
+                            # d2_d02_img_loss_cls.mean() + d2_d02_ins_loss_cls.mean() + d2_d02_cst_loss.mean() + \
+                            # d1_d12_img_loss_cls.mean() + d1_d12_ins_loss_cls.mean() + d1_d12_cst_loss.mean() + \
+                            # d2_d12_img_loss_cls.mean() + d2_d12_ins_loss_cls.mean() + d2_d12_cst_loss.mean()) 
 
                 loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                     + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean() \

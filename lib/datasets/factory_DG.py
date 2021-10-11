@@ -19,7 +19,7 @@ from lib.datasets.imagenet import imagenet
 import numpy as np
 
 
-for domin in ['cityscape', 'domain1', 'domain2', 'domain3']:
+for domin in ['cityscape', 'domain1', 'domain2', 'domain3', 'domain_RB', "domain_GY", 'domain_RB2', "domain_GY2", "domain_qs1"]:
   for split in ['train_s', 'train_t', 'train_all', 'test_s', 'test_t','test_all']:
     name = '{}_{}_{}'.format(domin, '2007', split)
     __sets[name] = (lambda split=split, domin=domin: cityscape(split, '2007', domin))

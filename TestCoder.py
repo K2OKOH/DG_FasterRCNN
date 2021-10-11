@@ -25,6 +25,37 @@ im_tfs = tfs.Compose([
 ])
 
 # 定义网络
+class autoencoder(nn.Module):
+    def __init__(self):
+        super(autoencoder, self).__init__()
+        
+        self.encoder = nn.Sequential(
+            nn.Linear(28*28, 128),
+            nn.ReLU(True),
+            nn.Linear(128, 64),
+            nn.ReLU(True),
+            nn.Linear(64, 12),
+            nn.ReLU(True),
+            nn.Linear(12, 3) # 输出的 code 是 3 维，便于可视化
+        )
+        
+        self.decoder = nn.Sequential(
+            nn.Linear(3, 12),
+            nn.ReLU(True),
+            nn.Linear(12, 64),
+            nn.ReLU(True),
+            nn.Linear(64, 128),
+            nn.ReLU(True),
+            nn.Linear(128, 28*28),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        encode = self.encoder(x)
+        decode = self.decoder(encode)
+        return encode, decode
+
+
 class conv_autoencoder(nn.Module):
     def __init__(self):
         super(conv_autoencoder, self).__init__()
@@ -134,6 +165,8 @@ if __name__ == '__main__':    #仅作为脚本运行
 
     setproctitle.setproctitle("< xmj_%s >" %args.task_name)
 
+    torch.manual_seed(10)
+
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
     img_dir = './SaveFile/image/encoder/' + args.task_name + '/'
@@ -166,27 +199,29 @@ if __name__ == '__main__':    #仅作为脚本运行
     num_boxes_s = Variable(num_boxes_s)
     gt_boxes_s = Variable(gt_boxes_s)
 
-    AutoEncoder_1 = conv_autoencoder()
-    AutoEncoder_2 = conv_autoencoder()
-    AutoEncoder_3 = conv_autoencoder()
-    
+    # AutoEncoder = conv_autoencoder()
+    AutoEncoder = torch.load("./SaveFile/model/encoder/AE_Diff_3A.pth")
+    # print(AutoEncoder)
+    model_dict  =  AutoEncoder.state_dict() 
+    # for key in model_dict.keys(): print(key)
+    # print(model_dict['decoder.0.weight'][7])
+    # model_dict['decoder.4.weight'][0:2] = torch.zeros(2,3,2,2)
+    # model_dict['decoder.4.weight'][3:] = torch.zeros(29,3,2,2)
+    # model_dict['decoder.0.weight'][0] = torch.zeros(16,3,3)
+    # print(model_dict['decoder.0.weight'][7])
+    # print(AutoEncoder)
     if args.mGPUs:
-        AutoEncoder_1 = nn.DataParallel(AutoEncoder_1)
-        AutoEncoder_2 = nn.DataParallel(AutoEncoder_2)
-        AutoEncoder_3 = nn.DataParallel(AutoEncoder_3)
+        AutoEncoder = nn.DataParallel(AutoEncoder)
 
     if args.cuda:
-        AutoEncoder_1.cuda()
-        AutoEncoder_2.cuda()
-        AutoEncoder_3.cuda()
+        AutoEncoder.cuda()
 
     criterion = nn.MSELoss(size_average=False) 
-
-    optimizer_1 = torch.optim.Adam(AutoEncoder_1.parameters(), lr=1e-3, weight_decay=1e-5)
-    optimizer_2 = torch.optim.Adam(AutoEncoder_2.parameters(), lr=1e-3, weight_decay=1e-5)
-    optimizer_3 = torch.optim.Adam(AutoEncoder_3.parameters(), lr=1e-3, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(AutoEncoder.parameters(), lr=1e-3, weight_decay=1e-5)
         
     iters_per_epoch = int(train_size_s / args.batch_size)
+
+    AutoEncoder.eval()
 
     for epoch in range(1, args.max_epochs + 1):
 
@@ -201,80 +236,44 @@ if __name__ == '__main__':    #仅作为脚本运行
 
                 img_data = im_data_s
 
-                # img_en = AutoEncoder_1.encoder(img_data)
+                # img_en = AutoEncoder.encoder(img_data)
                 # print(img_en.size())
 
-                # img_de = AutoEncoder_1.decoder(img_en)
+                # img_de = AutoEncoder.decoder(img_en)
                 # print(img_de.size())
-                img_en_1, img_de_1 = AutoEncoder_1(img_data)
-                img_en_2, img_de_2 = AutoEncoder_2(img_data)
-                img_en_3, img_de_3 = AutoEncoder_3(img_data)
-
-                img_de_r_1 = nn.functional.upsample(img_de_1, size=img_data.size()[2:], mode='bilinear', align_corners=False) 
-                img_de_r_2 = nn.functional.upsample(img_de_2, size=img_data.size()[2:], mode='bilinear', align_corners=False) 
-                img_de_r_3 = nn.functional.upsample(img_de_3, size=img_data.size()[2:], mode='bilinear', align_corners=False) 
-
-                loss_1 = criterion(img_de_r_1, img_data) / img_data.shape[0]
-                loss_2 = criterion(img_de_r_2, img_data) / img_data.shape[0]
-                loss_3 = criterion(img_de_r_3, img_data) / img_data.shape[0]
-
-                loss_21 = criterion(img_de_r_2, img_de_r_1.detach()) / img_data.shape[0]
-                loss_12 = criterion(img_de_r_1, img_de_r_2.detach()) / img_data.shape[0]
-                loss_23 = criterion(img_de_r_2, img_de_r_3.detach()) / img_data.shape[0]
-                loss_32 = criterion(img_de_r_3, img_de_r_2.detach()) / img_data.shape[0]
-                loss_31 = criterion(img_de_r_3, img_de_r_1.detach()) / img_data.shape[0]
-                loss_13 = criterion(img_de_r_1, img_de_r_3.detach()) / img_data.shape[0]
-
-                loss_1 = loss_1 - 0.1*(loss_12 + loss_13)
-                loss_2 = loss_2 - 0.2*(loss_21 + loss_23)
-                loss_3 = loss_3 - 0.3*(loss_31 + loss_32)
+                img_en = AutoEncoder.encoder(img_data)
+                print(img_en.size())
+                # img_en = img_en + 0.1*img_en.mean()*torch.randn(img_en.size()).cuda()
+                # print(img_en[0,1:].size())
+                # 仅使用1/8的特征进行恢复
+                # img_en[0,7:] = torch.zeros(1,50,100).cuda()
+                # img_en[0,1] = torch.zeros(50,100).cuda()
+                img_de = AutoEncoder.decoder(img_en)
+                img_de_r = nn.functional.upsample(img_de, size=img_data.size()[2:], mode='bilinear', align_corners=False) 
+                # loss = criterion(img_de_r, img_data) / img_data.shape[0]
 
                 # 反向传播
-                optimizer_1.zero_grad()
-                loss_1.backward()
-                optimizer_1.step()
+                # optimizer.zero_grad()
+                # loss.backward()
+                # optimizer.step()
 
-                optimizer_2.zero_grad()
-                loss_2.backward()
-                optimizer_2.step()
+                # if (step+1)%100==0:
+                #     print('step: {}, Loss: {:.4f}'.format(step+1, loss.item()))
 
-                optimizer_3.zero_grad()
-                loss_3.backward()
-                optimizer_3.step()
-
-                if (step+1)%100==0:
-                    print('step: {}, \nLoss_1: {:.4f}\tLoss_2: {:.4f}\tLoss_12: {:.4f}'.format(step+1, loss_1.item(), loss_2.item(), loss_12.item()))
-
-                if epoch == 1 and \
-                    ((step+1)<1000 and (step+1)%100==0) or \
+                if ((step+1)<1000 and (step+1)%100==0) or \
                     (step+1)%1000==0 or (step+1)<10 or \
                     ((step+1)<100 and (step+1)%10==0):
                     
-                    img = img_de_r_1[0].cpu().detach().numpy().transpose((1, 2, 0))
+                    # img = img_data[0].cpu().numpy().transpose((1, 2, 0))
+                    # cv2.imwrite("./SaveFile/image/encoder/%s_%sk_in.jpg" %(args.task_name, step//1000+1), img)
+
+                    img = img_de[0].cpu().detach().numpy().transpose((1, 2, 0))
                     img = np.clip(img, 0, 255)
-                    cv2.imwrite(img_dir + '%s_%s_1_out.jpg' %(args.task_name, step+1), img)
-
-                    img = img_de_r_2[0].cpu().detach().numpy().transpose((1, 2, 0))
-                    img = np.clip(img, 0, 255)
-                    cv2.imwrite(img_dir + '%s_%s_2_out.jpg' %(args.task_name, step+1), img)           
-
-                    img = img_de_r_3[0].cpu().detach().numpy().transpose((1, 2, 0))
-                    img = np.clip(img, 0, 255)
-                    cv2.imwrite(img_dir + '%s_%s_3_out.jpg' %(args.task_name, step+1), img)           
-
-            torch.save(AutoEncoder_1, args.save_dir + args.task_name + '.pth') 
-
-            img = img_data[0].cpu().numpy().transpose((1, 2, 0))
-            cv2.imwrite(img_dir + '%s_e%s_in.jpg' %(args.task_name, epoch), img)
-
-            img = img_de_r_1[0].cpu().detach().numpy().transpose((1, 2, 0))
-            img = np.clip(img, 0, 255)
-            cv2.imwrite(img_dir + '%s_e%s_1_out.jpg' %(args.task_name, epoch), img)
+                    cv2.imwrite(img_dir + 'feature_div_s.jpg', img)           
+                    # cv2.imwrite(img_dir + '%s_%s_2_out.jpg' %(args.task_name, step+1), img)           
+                    # cv2.imwrite("./SaveFile/image/encoder/%s_%s_out.jpg" %(args.task_name, step+1), img)
             
-            img = img_de_r_2[0].cpu().detach().numpy().transpose((1, 2, 0))
+            # torch.save(AutoEncoder, args.save_dir + args.task_name + '.pth') 
+            img = img_de[0].cpu().detach().numpy().transpose((1, 2, 0))
             img = np.clip(img, 0, 255)
-            cv2.imwrite(img_dir + '%s_e%s_2_out.jpg' %(args.task_name, epoch), img)
-
-            img = img_de_r_3[0].cpu().detach().numpy().transpose((1, 2, 0))
-            img = np.clip(img, 0, 255)
-            cv2.imwrite(img_dir + '%s_e%s_3_out.jpg' %(args.task_name, epoch), img)
+            cv2.imwrite("./SaveFile/image/encoder/%s_e%s_out.jpg" %(args.task_name, epoch), img)

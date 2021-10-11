@@ -7,9 +7,9 @@ import glob
 if __name__ == '__main__':
     IMG_D0_PATH = "../data/cityscape/VOC2007/JPEGImages"
     IMG_D1_PATH = "../DataSet/SIM10K/VOC2012/JPEGImages"
-    D1_PATH = "../DataSet/SIM10K/VOC2012/JPEGImages/3386352.jpg"
+    D1_PATH = "../DataSet/Domain/ひまわり.jpg"
     MASK_PATH = "./SaveFile/nparray/img_D0_mask.npy"
-    SAVE_PATH = "./SaveFile/image/colortry"
+    SAVE_PATH = "./SaveFile/image/GY_1"
     R_DIV = 64
     TRY_DIV = 3
     D1_SET_FLAG = 0
@@ -65,12 +65,12 @@ if __name__ == '__main__':
             np.save("./SaveFile/nparray/img_D0_mask.npy",img_mask)
                 # cv2.imwrite("img_mask.jpg",img_mask*255)
         else:
-            print("Read mask file..")
+            # print("Read mask file..")
             img_mask = np.load(MASK_PATH)
-            print("read %s finished!" % MASK_PATH)
+            # print("read %s finished!" % MASK_PATH)
         
-        img_mask_try[0] = img_mask[0:2].sum(axis=0)
-        img_mask_try[1] = img_mask[2:32].sum(axis=0)
+        img_mask_try[0] = img_mask[0:1].sum(axis=0)
+        img_mask_try[1] = img_mask[1:32].sum(axis=0)
         img_mask_try[2] = img_mask[32:64].sum(axis=0)
 
         # D0 DCT
@@ -78,7 +78,7 @@ if __name__ == '__main__':
             img_D0_dct[:,:,c] = cv2.dct(np.float32(img_D0[:, :, c]))
         # D0 IDCT
         for t in range(TRY_DIV):
-            print("D1->r: %s" %t)
+            # print("D1->r: %s" %t)
             for c in range(img_c):
                 img_dct_m = img_D0_dct[:,:,c]*img_mask_try[t]
                 
@@ -101,10 +101,10 @@ if __name__ == '__main__':
 
         for c in range(img_c):
             img_D1_dct[:,:,c] = cv2.dct(np.float32(img_D1[:, :, c]))
-        cv2.imwrite("SaveFile/image/img_D1_dct.jpg", img_D1_dct)
+        # cv2.imwrite("SaveFile/image/img_D1_dct.jpg", img_D1_dct)
         
         for t in range(TRY_DIV):
-            print("D1->r: %s" %t)
+            # print("D1->r: %s" %t)
             for c in range(img_c):
                 img_D1_dct_m = img_D1_dct[:,:,c]*img_mask_try[t]
             
@@ -132,10 +132,10 @@ if __name__ == '__main__':
             img_D0_dct_s[:,:,c] = img_D0_dct[:,:,c]*img_mask_try[0]
             img_D1_dct_s[:,:,c] = img_D1_dct[:,:,c]*img_mask_try[0]
 
-        cv2.imwrite("SaveFile/image/colortry/D0_dct.jpg", img_D0_dct_s)
-        cv2.imwrite("SaveFile/image/colortry/D1_dct.jpg", img_D1_dct_s)
+        # cv2.imwrite("SaveFile/image/colortry/D0_dct.jpg", img_D0_dct_s)
+        # cv2.imwrite("SaveFile/image/colortry/D1_dct.jpg", img_D1_dct_s)
         img_D01_dct_s = match_histograms(img_D0_dct_s,img_D1_dct_s,multichannel=True)
-        cv2.imwrite("SaveFile/image/colortry/match_dct.jpg", img_D01_dct_s)
+        # cv2.imwrite("SaveFile/image/colortry/match_dct.jpg", img_D01_dct_s)
 
         # for c in range(img_c):
         #     img_D01_dct_s[:,:,c] = cv2.idct(img_D0_dct_s[:,:,c])
@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
         for c in range(img_c):
             img_D01_dct_s[:,:,c] = img_D0_dct[:,:,c]*img_mask_try[1] + img_D0_dct[:,:,c]*img_mask_try[2] + img_D01_dct_s[:,:,c]
-        cv2.imwrite("SaveFile/image/colortry/add_dct.jpg", img_D01_dct_s)
+        # cv2.imwrite("SaveFile/image/colortry/add_dct.jpg", img_D01_dct_s)
         for c in range(img_c):
             img_show[:,:,c] = cv2.idct(img_D01_dct_s[:,:,c])
         cv2.imwrite(SAVE_PATH + "/%s.jpg" %img, img_show) 
